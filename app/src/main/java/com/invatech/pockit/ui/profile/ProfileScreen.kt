@@ -1,5 +1,6 @@
 package com.invatech.pockit.ui.profile
 
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -32,20 +33,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Copyright
-import androidx.compose.material.icons.rounded.CurrencyRupee
-import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Fingerprint
-import androidx.compose.material.icons.rounded.HelpOutline
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Logout
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Shield
-import androidx.compose.material.icons.rounded.Verified
+import com.invatech.pockit.data.ads.AdManager
+import com.invatech.pockit.ui.common.ads.PockitBannerAd
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,6 +69,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import androidx.fragment.app.FragmentActivity
+import com.invatech.pockit.data.biometric.BiometricAuthManager
 import com.invatech.pockit.ui.common.legal.LegalBottomSheet
 import com.invatech.pockit.ui.common.legal.LegalDocType
 import com.invatech.pockit.ui.theme.Cloud
@@ -98,32 +97,32 @@ fun ProfileScreen(
                 context.packageManager.getPackageInfo(
                     context.packageName,
                     PackageManager.PackageInfoFlags.of(0)
-                ).versionName ?: "1.1"
+                ).versionName ?: "1.2"
             } else {
                 @Suppress("DEPRECATION")
-                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.1"
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.2"
             }
         } catch (_: Exception) {
-            "1.1"
+            "1.2"
         }
     }
     val currentUser = remember { FirebaseAuth.getInstance().currentUser }
-    val displayName = currentUser?.displayName ?: "Kaizen"
-    val email = currentUser?.email ?: "user@pockit.app"
+    val displayName = currentUser?.displayName?.ifBlank { null } ?: "User"
+    val email = currentUser?.email ?: ""
     val userInitial = displayName.firstOrNull()?.uppercase() ?: "P"
 
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showLegalSheet by remember { mutableStateOf(false) }
     var legalDocType by remember { mutableStateOf(LegalDocType.PRIVACY_POLICY) }
-    var biometricsEnabled by remember { mutableStateOf(true) }
-    var notificationsEnabled by remember { mutableStateOf(true) }
+    val biometricManager = remember { BiometricAuthManager(context) }
+    var biometricsEnabled by remember { mutableStateOf(biometricManager.isBiometricEnabled) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // 1. Hero Profile Header
+        // 1. Hero Profile Header with Initial Avatar
         item {
             Column(
                 modifier = Modifier
@@ -131,7 +130,7 @@ fun ProfileScreen(
                     .padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Animated Avatar with Gradient Halo
+                // Initial-based Profile Circle Avatar
                 Box(
                     modifier = Modifier
                         .size(96.dp)
@@ -142,7 +141,7 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = userInitial,
-                        fontSize = 38.sp,
+                        fontSize = 40.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Ink
                     )
@@ -164,66 +163,10 @@ fun ProfileScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = InkMuted
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Surface(
-                    color = Mint,
-                    shape = CircleShape
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Verified,
-                            contentDescription = null,
-                            tint = Ink,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = "Pockit Member",
-                            color = Ink,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
             }
         }
 
-        // 2. Bento Quick Summary Stats
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                BentoStatCard(
-                    title = "Currency",
-                    value = "₹ INR",
-                    icon = Icons.Rounded.CurrencyRupee,
-                    backgroundColor = Cloud,
-                    modifier = Modifier.weight(1f)
-                )
-                BentoStatCard(
-                    title = "Security",
-                    value = "Active",
-                    icon = Icons.Rounded.Security,
-                    backgroundColor = Peach,
-                    modifier = Modifier.weight(1f)
-                )
-                BentoStatCard(
-                    title = "Plan",
-                    value = "Pro",
-                    icon = Icons.Rounded.Verified,
-                    backgroundColor = Lavender,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        // 3. Preferences Section
+        // 2. Preferences Section
         item {
             Text(
                 text = "Preferences",
@@ -244,28 +187,52 @@ fun ProfileScreen(
                     SettingToggleRow(
                         icon = Icons.Rounded.Fingerprint,
                         title = "App Lock & Biometrics",
-                        subtitle = "Require fingerprint / face to open",
+                        subtitle = if (biometricsEnabled) "Fingerprint / face lock active" else "Require fingerprint / face to open",
                         checked = biometricsEnabled,
-                        onCheckedChange = { biometricsEnabled = it }
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    SettingToggleRow(
-                        icon = Icons.Rounded.Notifications,
-                        title = "Push Notifications",
-                        subtitle = "Alerts on bill splits and updates",
-                        checked = notificationsEnabled,
-                        onCheckedChange = { notificationsEnabled = it }
+                        onCheckedChange = { enable ->
+                            if (enable) {
+                                if (!biometricManager.canAuthenticate()) {
+                                    Toast.makeText(
+                                        context,
+                                        "No biometrics or screen lock enrolled on this device",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    val activity = context as? FragmentActivity
+                                    if (activity != null) {
+                                        biometricManager.promptBiometric(
+                                            activity = activity,
+                                            title = "Enable App Lock",
+                                            subtitle = "Verify fingerprint or face to enable",
+                                            onSuccess = {
+                                                biometricManager.isBiometricEnabled = true
+                                                biometricsEnabled = true
+                                                Toast.makeText(context, "App lock enabled!", Toast.LENGTH_SHORT).show()
+                                            },
+                                            onError = { _, err ->
+                                                Toast.makeText(context, "Failed: $err", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+                                    } else {
+                                        biometricManager.isBiometricEnabled = true
+                                        biometricsEnabled = true
+                                    }
+                                }
+                            } else {
+                                biometricManager.isBiometricEnabled = false
+                                biometricsEnabled = false
+                                Toast.makeText(context, "App lock disabled", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
                 }
             }
         }
 
-        // 4. Data & Support Section
+        // 3. Support & Feedback Section
         item {
             Text(
-                text = "Data & Account",
+                text = "Support & Feedback",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -281,29 +248,46 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     SettingActionRow(
-                        icon = Icons.Rounded.FileDownload,
-                        title = "Export Transactions",
-                        subtitle = "Download CSV spreadsheet",
+                        icon = Icons.AutoMirrored.Rounded.HelpOutline,
+                        title = "Help & Support",
+                        subtitle = "Contact the Pockit team directly",
                         onClick = {
-                            Toast.makeText(context, "Exporting statement...", Toast.LENGTH_SHORT).show()
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                data = android.net.Uri.parse("mailto:invatechstudioz@gmail.com")
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "Pockit Support & Feedback")
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Contact: invatechstudioz@gmail.com", Toast.LENGTH_LONG).show()
+                            }
                         }
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     SettingActionRow(
-                        icon = Icons.Rounded.HelpOutline,
-                        title = "Help & Support",
-                        subtitle = "FAQs and contact support",
+                        icon = Icons.Rounded.Favorite,
+                        title = "Support Pockit Development",
+                        subtitle = "Watch a short ad to support free updates ❤️",
                         onClick = {
-                            Toast.makeText(context, "Pockit Support: hello@pockit.app", Toast.LENGTH_LONG).show()
+                            val activity = context as? Activity
+                            if (activity != null) {
+                                AdManager.showRewardedAd(
+                                    activity = activity,
+                                    onRewardEarned = {
+                                        Toast.makeText(context, "Thank you for supporting Pockit! ❤️", Toast.LENGTH_LONG).show()
+                                    },
+                                    onAdClosed = {}
+                                )
+                            }
                         }
                     )
                 }
             }
         }
 
-        // 5. Legal & Policies Section
+        // 4. Legal & Policies Section
         item {
             Text(
                 text = "Legal & Policies",
@@ -358,7 +342,7 @@ fun ProfileScreen(
             }
         }
 
-        // 6. Sign Out Button
+        // 5. Sign Out Button
         item {
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -394,7 +378,7 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Logout,
+                        imageVector = Icons.AutoMirrored.Rounded.Logout,
                         contentDescription = "Sign Out",
                         tint = ErrorRed,
                         modifier = Modifier.size(20.dp)
@@ -411,19 +395,23 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            PockitBannerAd()
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Pockit v$versionName · Production Build",
+                    text = "Pockit v$versionName Â· Production Build",
                     style = MaterialTheme.typography.labelMedium,
                     color = InkMuted,
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "© 2026 Pockit Technologies Inc. · All rights reserved",
+                    text = "Â© 2026 Pockit Technologies Inc. Â· All rights reserved",
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                     color = InkMuted.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
@@ -440,7 +428,7 @@ fun ProfileScreen(
         )
     }
 
-    // Sign Out Confirmation Bottom Sheet (replacing old AlertDialog)
+    // Sign Out Confirmation Bottom Sheet
     if (showSignOutDialog) {
         ModalBottomSheet(
             onDismissRequest = { showSignOutDialog = false },
@@ -463,7 +451,7 @@ fun ProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Logout,
+                        imageVector = Icons.AutoMirrored.Rounded.Logout,
                         contentDescription = null,
                         tint = ErrorRed,
                         modifier = Modifier.size(30.dp)
@@ -506,45 +494,6 @@ fun ProfileScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun BentoStatCard(
-    title: String,
-    value: String,
-    icon: ImageVector,
-    backgroundColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color = backgroundColor,
-        shape = RoundedCornerShape(22.dp),
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Ink,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Ink
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = Ink.copy(alpha = 0.65f)
-            )
         }
     }
 }

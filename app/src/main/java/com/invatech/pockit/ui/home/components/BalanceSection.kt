@@ -32,7 +32,7 @@ import kotlin.math.roundToInt
 @Composable
 fun BalanceSection(
     balance: Double,
-    changePercent: Double,
+    changePercent: Double? = null,
     modifier: Modifier = Modifier
 ) {
     // Smooth fluid rolling number counter
@@ -70,26 +70,28 @@ fun BalanceSection(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        if (changePercent != null) {
+            Spacer(modifier = Modifier.height(8.dp))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Surface(color = Lavender, shape = CircleShape) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(color = Lavender, shape = CircleShape) {
+                    Text(
+                        text = "${if (changePercent >= 0) "+" else ""}$changePercent%",
+                        color = Ink,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
                 Text(
-                    text = "${if (changePercent >= 0) "+" else ""}$changePercent%",
-                    color = Ink,
+                    text = "vs last month",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    color = mutedColor
                 )
             }
-            Text(
-                text = "vs last month",
-                style = MaterialTheme.typography.labelMedium,
-                color = mutedColor
-            )
         }
     }
 }

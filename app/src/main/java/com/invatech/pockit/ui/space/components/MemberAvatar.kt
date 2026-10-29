@@ -38,7 +38,7 @@ fun MemberAvatar(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = member.name.firstOrNull()?.uppercase() ?: "?",
+            text = member.displayName.firstOrNull()?.uppercase() ?: "?",
             color = Ink,
             fontWeight = FontWeight.Bold,
             fontSize = (size.value * 0.4f).sp
@@ -76,7 +76,7 @@ fun AvatarStack(
                     text = "+${members.size - max}",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = (size.value * 0.34f).sp
+                    fontSize = (size.value * 0.36f).sp
                 )
             }
         }

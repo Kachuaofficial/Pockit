@@ -37,7 +37,8 @@ data class Transaction(
     val category: Category,
     val amount: Double,
     val isExpense: Boolean,
-    val dateLabel: String
+    val dateLabel: String,
+    val stringId: String = ""
 )
 
 data class DaySpending(

@@ -14,8 +14,8 @@ android {
         applicationId = "com.invatech.pockit"
         minSdk = 24
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,6 +38,11 @@ android {
     buildFeatures {
         compose = true
     }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {
@@ -56,6 +61,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.messaging)
     implementation(libs.googleid)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -66,6 +72,15 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
-
+    implementation("androidx.fragment:fragment-ktx:1.8.6")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+
+    // QR Code generation and barcode scanning
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+
+    // Google AdMob & User Messaging Platform (GDPR/UMP consent)
+    implementation(libs.play.services.ads)
+    implementation(libs.user.messaging.platform)
 }

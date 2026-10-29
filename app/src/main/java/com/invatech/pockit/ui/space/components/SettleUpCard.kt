@@ -29,17 +29,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.space.model.Member
 import com.invatech.pockit.ui.space.util.Settlement
 import com.invatech.pockit.ui.space.util.formatMoney
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.Mint
+import com.invatech.pockit.ui.theme.Peach
 
 @Composable
 fun SettleUpCard(
     settlements: List<Settlement>,
     members: Map<String, Member>,
     onSettle: (Settlement) -> Unit,
+    pendingSettlementKeys: Set<String> = emptySet(),
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -62,6 +65,8 @@ fun SettleUpCard(
                 val from = members[settlement.fromId]
                 val to = members[settlement.toId]
                 if (from != null && to != null) {
+                    val isPending = pendingSettlementKeys.contains("${settlement.fromId}_${settlement.toId}")
+
                     val interactionSource = remember { MutableInteractionSource() }
                     val isPressed by interactionSource.collectIsPressedAsState()
                     val buttonScale by animateFloatAsState(
@@ -91,25 +96,66 @@ fun SettleUpCard(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
-                        Surface(
-                            color = Mint,
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .scale(buttonScale)
-                                .clip(CircleShape)
-                                .clickable(
-                                    interactionSource = interactionSource,
-                                    indication = null,
-                                    onClick = { onSettle(settlement) }
-                                )
-                        ) {
-                            Text(
-                                text = "Settle",
-                                color = Ink,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp)
-                            )
+
+                        when {
+                            isPending -> {
+                                Surface(
+                                    color = Peach,
+                                    shape = CircleShape
+                                ) {
+                                    Text(
+                                        text = "Pending approval",
+                                        color = Ink,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                            from.isYou -> {
+                                Surface(
+                                    color = Mint,
+                                    shape = CircleShape,
+                                    modifier = Modifier
+                                        .scale(buttonScale)
+                                        .clip(CircleShape)
+                                        .clickable(
+                                            interactionSource = interactionSource,
+                                            indication = null,
+                                            onClick = { onSettle(settlement) }
+                                        )
+                                ) {
+                                    Text(
+                                        text = "I have Paid",
+                                        color = Ink,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                    )
+                                }
+                            }
+                            to.isYou -> {
+                                Surface(
+                                    color = Mint,
+                                    shape = CircleShape,
+                                    modifier = Modifier
+                                        .scale(buttonScale)
+                                        .clip(CircleShape)
+                                        .clickable(
+                                            interactionSource = interactionSource,
+                                            indication = null,
+                                            onClick = { onSettle(settlement) }
+                                        )
+                                ) {
+                                    Text(
+                                        text = "Settle",
+                                        color = Ink,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }

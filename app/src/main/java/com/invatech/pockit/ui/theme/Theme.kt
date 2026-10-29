@@ -70,7 +70,7 @@ fun PockitTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = if (darkTheme) LightColors else LightColors,
         typography = PockitTypography,
         shapes = PockitShapes,
         content = content

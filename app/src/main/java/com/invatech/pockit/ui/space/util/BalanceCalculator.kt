@@ -11,13 +11,15 @@ data class Settlement(
 
 object BalanceCalculator {
 
-    /** memberId -> net balance. Positive = gets back money, negative = owes money. */
+    /** memberId -> net balance. Positive = gets back money, negative = owes money. Only counts confirmed expenses/settlements. */
     fun netBalances(space: Space): Map<String, Double> {
         val net = space.members.associate { it.id to 0.0 }.toMutableMap()
         space.expenses.forEach { expense ->
-            net[expense.paidById] = (net[expense.paidById] ?: 0.0) + expense.amount
-            expense.shares.forEach { (memberId, share) ->
-                net[memberId] = (net[memberId] ?: 0.0) - share
+            if (expense.isConfirmed) {
+                net[expense.paidById] = (net[expense.paidById] ?: 0.0) + expense.amount
+                expense.shares.forEach { (memberId, share) ->
+                    net[memberId] = (net[memberId] ?: 0.0) - share
+                }
             }
         }
         return net

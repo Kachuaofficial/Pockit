@@ -135,4 +135,58 @@ class HomeViewModel(
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
+
+    /**
+     * Deletes a transaction and refunds or reverts wallet balance with optimistic UI update.
+     */
+    fun deleteTransaction(transactionId: String) {
+        val previousTransactions = _uiState.value.transactions
+        // Optimistic UI update
+        _uiState.value = _uiState.value.copy(
+            transactions = previousTransactions.filter { it.id != transactionId }
+        )
+
+        viewModelScope.launch {
+            try {
+                walletRepository.deleteTransaction(transactionId)
+                loadWallet()
+            } catch (e: Exception) {
+                // Rollback on failure
+                _uiState.value = _uiState.value.copy(
+                    transactions = previousTransactions,
+                    errorMessage = e.message ?: "Transaction delete nahi ho paya."
+                )
+            }
+        }
+    }
+
+    /**
+     * Restores a deleted transaction and re-applies wallet balance with optimistic UI update.
+     */
+    fun restoreTransaction(transaction: HomeTransactionUi) {
+        val previousTransactions = _uiState.value.transactions
+        // Optimistic UI update
+        _uiState.value = _uiState.value.copy(
+            transactions = (listOf(transaction) + previousTransactions.filter { it.id != transaction.id })
+        )
+
+        viewModelScope.launch {
+            try {
+                walletRepository.restoreTransaction(
+                    transactionId = transaction.id,
+                    title = transaction.title,
+                    amountPaise = transaction.amountPaise,
+                    type = transaction.type,
+                    category = transaction.category,
+                    createdAt = transaction.createdAt
+                )
+                loadWallet()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    transactions = previousTransactions,
+                    errorMessage = e.message ?: "Transaction restore nahi ho paya."
+                )
+            }
+        }
+    }
 }

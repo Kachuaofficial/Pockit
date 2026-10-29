@@ -121,4 +121,90 @@ class WalletRepository(
             true
         }.await()
     }
+
+    /**
+     * Deletes a transaction and adjusts the wallet balance atomically in Firestore.
+     */
+    suspend fun deleteTransaction(transactionId: String) {
+        val uid = userId()
+        val wallet = walletRef(uid)
+        val transactionRef = firestore
+            .collection("users")
+            .document(uid)
+            .collection("transactions")
+            .document(transactionId)
+
+        firestore.runTransaction { transaction ->
+            val txSnapshot = transaction.get(transactionRef)
+            if (!txSnapshot.exists()) return@runTransaction
+
+            val amountPaise = txSnapshot.getLong("amountPaise") ?: 0L
+            val typeName = txSnapshot.getString("type") ?: ""
+            val type = runCatching { WalletTransactionType.valueOf(typeName) }.getOrNull()
+
+            val walletSnapshot = transaction.get(wallet)
+            val currentBalance = walletSnapshot.getLong("balancePaise") ?: 0L
+
+            val newBalance = when (type) {
+                WalletTransactionType.EXPENSE -> Math.addExact(currentBalance, amountPaise)
+                WalletTransactionType.INCOME -> (currentBalance - amountPaise).coerceAtLeast(0L)
+                null -> currentBalance
+            }
+
+            val walletData = mapOf(
+                "balancePaise" to newBalance,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            transaction.set(wallet, walletData, com.google.firebase.firestore.SetOptions.merge())
+            transaction.delete(transactionRef)
+        }.await()
+    }
+
+    /**
+     * Restores a deleted transaction and re-applies its balance change atomically.
+     */
+    suspend fun restoreTransaction(
+        transactionId: String,
+        title: String,
+        amountPaise: Long,
+        type: WalletTransactionType,
+        category: String,
+        createdAt: com.google.firebase.Timestamp?
+    ) {
+        val uid = userId()
+        val wallet = walletRef(uid)
+        val transactionRef = firestore
+            .collection("users")
+            .document(uid)
+            .collection("transactions")
+            .document(transactionId)
+
+        firestore.runTransaction { transaction ->
+            val walletSnapshot = transaction.get(wallet)
+            val currentBalance = walletSnapshot.getLong("balancePaise") ?: 0L
+
+            val newBalance = when (type) {
+                WalletTransactionType.INCOME -> Math.addExact(currentBalance, amountPaise)
+                WalletTransactionType.EXPENSE -> {
+                    require(currentBalance >= amountPaise) { "Insufficient balance." }
+                    currentBalance - amountPaise
+                }
+            }
+
+            val walletData = mapOf(
+                "balancePaise" to newBalance,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+            transaction.set(wallet, walletData, com.google.firebase.firestore.SetOptions.merge())
+
+            val transactionData = mapOf(
+                "title" to title.trim(),
+                "amountPaise" to amountPaise,
+                "type" to type.name,
+                "category" to category,
+                "createdAt" to (createdAt ?: FieldValue.serverTimestamp())
+            )
+            transaction.set(transactionRef, transactionData)
+        }.await()
+    }
 }

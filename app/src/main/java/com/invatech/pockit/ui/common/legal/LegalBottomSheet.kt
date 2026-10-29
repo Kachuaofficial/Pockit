@@ -297,8 +297,8 @@ private fun PrivacyPolicyContent() {
 
         LegalSection(
             number = "4",
-            title = "Third-Party Services",
-            body = "Pockit integrates with Google Identity Services for secure authentication and Google Cloud Firestore for synchronized database persistence. We do not sell, rent, or monetize your personal or financial log data to any third-party advertisers."
+            title = "Third-Party Services & Advertising",
+            body = "Pockit integrates with Google Identity Services for authentication, Firebase for database sync, and Google AdMob for delivering non-intrusive advertisements to support free development. AdMob and its advertising partners may process device identifiers and anonymized usage data in accordance with Google's Privacy Policy. European and UK users can manage their consent choices at any time via the User Messaging Platform dialog."
         )
 
         LegalSection(
@@ -387,7 +387,7 @@ private fun CopyrightContent() {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "© 2026 Pockit Technologies Inc.",
+                    text = "Â© 2026 Pockit Technologies Inc.",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = Ink

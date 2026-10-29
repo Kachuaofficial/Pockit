@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -66,9 +67,14 @@ fun SpendingChartCard(
         mutableStateOf(if (highestIndex >= 0) highestIndex else data.lastIndex)
     }
 
-    val total = remember(data) {
-        data.sumOf { it.amount.toDouble() }.toInt()
-    }
+    val animatedTotal by animateFloatAsState(
+        targetValue = data.sumOf { it.amount.toDouble() }.toFloat(),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "spending_total_counter"
+    )
 
     Surface(
         color = Mint,
@@ -87,7 +93,7 @@ fun SpendingChartCard(
                         color = Ink.copy(alpha = 0.65f)
                     )
                     Text(
-                        text = "₹$total",
+                        text = "₹${animatedTotal.toInt()}",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Ink
@@ -169,7 +175,7 @@ fun SpendingChartCard(
                                 exit = fadeOut()
                             ) {
                                 Text(
-                                    text = "₹${day.amount.toInt()}",
+                                    text = "â‚¹${day.amount.toInt()}",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Ink

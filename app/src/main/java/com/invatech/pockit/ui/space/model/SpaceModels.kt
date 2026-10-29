@@ -36,7 +36,8 @@ data class SpaceExpense(
     /** memberId -> amount that member owes for this expense. */
     val shares: Map<String, Double>,
     val dateLabel: String,
-    val isSettlement: Boolean = false
+    val isSettlement: Boolean = false,
+    val isConfirmed: Boolean = true
 )
 
 data class Space(
@@ -47,10 +48,14 @@ data class Space(
     val inviteCode: String,
     val members: List<Member>,
     /** Newest first. */
-    val expenses: List<SpaceExpense> = emptyList()
+    val expenses: List<SpaceExpense> = emptyList(),
+    val createdBy: String = ""
 ) {
     val accent: Color get() = SpaceAccents[themeIndex.mod(SpaceAccents.size)]
-    val totalSpent: Double get() = expenses.filter { !it.isSettlement }.sumOf { it.amount }
+    val totalSpent: Double get() = expenses.filter { !it.isSettlement && it.isConfirmed }.sumOf { it.amount }
+    val isCreator: Boolean
+        get() = (createdBy.isNotEmpty() && createdBy == CurrentUserId) ||
+                (createdBy.isEmpty() && members.firstOrNull()?.isYou == true)
 }
 
 enum class SplitMode { Equal, Custom }

@@ -101,26 +101,6 @@ fun HomeScreenSkeleton(
                         .height(48.dp),
                     shape = RoundedCornerShape(12.dp)
                 )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ShimmerBox(
-                        modifier = Modifier
-                            .width(64.dp)
-                            .height(28.dp),
-                        shape = CircleShape
-                    )
-                    ShimmerBox(
-                        modifier = Modifier
-                            .width(90.dp)
-                            .height(16.dp),
-                        shape = RoundedCornerShape(6.dp)
-                    )
-                }
             }
         }
 

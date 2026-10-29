@@ -122,4 +122,154 @@ class SpaceViewModel(
             repository.settle(spaceId, settlement)
         }
     }
+
+    /**
+     * Confirms a received settlement payment with optimistic UI update.
+     */
+    fun confirmSettlement(spaceId: String, expenseId: String, onError: (String) -> Unit = {}) {
+        val currentExpenses = expensesBySpace[spaceId] ?: emptyList()
+        expensesBySpace[spaceId] = currentExpenses.map {
+            if (it.id == expenseId) it.copy(isConfirmed = true) else it
+        }
+        updateMergedSpaces()
+
+        viewModelScope.launch {
+            val result = repository.confirmSettlement(spaceId, expenseId)
+            result.onFailure { error ->
+                expensesBySpace[spaceId] = currentExpenses
+                updateMergedSpaces()
+                onError(error.message ?: "Failed to confirm payment")
+            }
+        }
+    }
+
+    /**
+     * Declines or rejects an unconfirmed settlement with optimistic UI update.
+     */
+    fun rejectSettlement(spaceId: String, expenseId: String, onError: (String) -> Unit = {}) {
+        val currentExpenses = expensesBySpace[spaceId] ?: emptyList()
+        expensesBySpace[spaceId] = currentExpenses.filterNot { it.id == expenseId }
+        updateMergedSpaces()
+
+        viewModelScope.launch {
+            val result = repository.rejectSettlement(spaceId, expenseId)
+            result.onFailure { error ->
+                expensesBySpace[spaceId] = currentExpenses
+                updateMergedSpaces()
+                onError(error.message ?: "Failed to decline payment")
+            }
+        }
+    }
+
+    /**
+     * Deletes an expense from the space in Firestore with optimistic UI update.
+     */
+    fun deleteExpense(spaceId: String, expenseId: String) {
+        val currentExpenses = expensesBySpace[spaceId] ?: emptyList()
+        // Optimistic update for instantaneous 60/120fps UI response
+        expensesBySpace[spaceId] = currentExpenses.filter { it.id != expenseId }
+        updateMergedSpaces()
+
+        viewModelScope.launch {
+            try {
+                repository.deleteExpense(spaceId, expenseId)
+            } catch (e: Exception) {
+                // Rollback on failure
+                expensesBySpace[spaceId] = currentExpenses
+                updateMergedSpaces()
+            }
+        }
+    }
+
+    /**
+     * Restores a deleted expense document back to Firestore with optimistic UI update.
+     */
+    fun restoreExpense(spaceId: String, expense: SpaceExpense) {
+        val currentExpenses = expensesBySpace[spaceId] ?: emptyList()
+        // Optimistic update
+        expensesBySpace[spaceId] = (listOf(expense) + currentExpenses.filter { it.id != expense.id })
+            .sortedByDescending { it.dateLabel }
+        updateMergedSpaces()
+
+        viewModelScope.launch {
+            try {
+                repository.restoreExpense(spaceId, expense)
+            } catch (e: Exception) {
+                // Rollback on failure
+                expensesBySpace[spaceId] = currentExpenses
+                updateMergedSpaces()
+            }
+        }
+    }
+
+    /**
+     * Renames a space with optimistic UI update.
+     */
+    fun renameSpace(spaceId: String, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty()) return
+
+        rawSpacesList = rawSpacesList.map { space ->
+            if (space.id == spaceId) space.copy(name = trimmed) else space
+        }
+        updateMergedSpaces()
+
+        viewModelScope.launch {
+            try {
+                repository.renameSpace(spaceId, trimmed)
+            } catch (e: Exception) {
+                // Real-time listener will resync state if error
+            }
+        }
+    }
+
+    /**
+     * Removes a member from a space (only creator can do this) with optimistic UI update.
+     */
+    fun removeMember(spaceId: String, memberId: String, onError: (String) -> Unit = {}) {
+        val originalList = rawSpacesList
+        rawSpacesList = rawSpacesList.map { space ->
+            if (space.id == spaceId) {
+                space.copy(members = space.members.filterNot { it.id == memberId })
+            } else space
+        }
+        updateMergedSpaces()
+
+        viewModelScope.launch {
+            val result = repository.removeMember(spaceId, memberId)
+            result.onFailure { error ->
+                rawSpacesList = originalList
+                updateMergedSpaces()
+                onError(error.message ?: "Failed to remove member")
+            }
+        }
+    }
+
+    /**
+     * Deletes a space and all its expenses with optimistic UI update.
+     */
+    fun deleteSpace(spaceId: String, onDeleted: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        val originalList = rawSpacesList
+        val originalExpenses = expensesBySpace[spaceId]
+
+        rawSpacesList = rawSpacesList.filterNot { it.id == spaceId }
+        updateMergedSpaces()
+
+        expenseJobs.remove(spaceId)?.cancel()
+        expensesBySpace.remove(spaceId)
+
+        viewModelScope.launch {
+            val result = repository.deleteSpace(spaceId)
+            result.onSuccess {
+                onDeleted()
+            }.onFailure { error ->
+                rawSpacesList = originalList
+                if (originalExpenses != null) {
+                    expensesBySpace[spaceId] = originalExpenses
+                }
+                updateMergedSpaces()
+                onError(error.message ?: "Failed to delete space")
+            }
+        }
+    }
 }

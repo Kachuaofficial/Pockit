@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.invatech.pockit.ui.common.swipe.SwipeToDeleteContainer
 import com.invatech.pockit.ui.home.model.Transaction
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.InkMuted
@@ -35,7 +36,8 @@ import com.invatech.pockit.ui.theme.MintDeep
 fun RecentTransactionsCard(
     transactions: List<Transaction>,
     modifier: Modifier = Modifier,
-    onViewAll: () -> Unit = {}
+    onViewAll: () -> Unit = {},
+    onDeleteTransaction: ((Transaction) -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -105,7 +107,18 @@ fun RecentTransactionsCard(
             } else {
                 // Strictly take maximum 5 transactions on the home screen
                 transactions.take(5).forEach { transaction ->
-                    TransactionItem(transaction = transaction)
+                    if (onDeleteTransaction != null && transaction.stringId.isNotBlank()) {
+                        SwipeToDeleteContainer(
+                            itemKey = transaction.stringId,
+                            shape = RoundedCornerShape(22.dp),
+                            requireConfirmation = true,
+                            onDelete = { onDeleteTransaction(transaction) }
+                        ) {
+                            TransactionItem(transaction = transaction)
+                        }
+                    } else {
+                        TransactionItem(transaction = transaction)
+                    }
                 }
             }
         }

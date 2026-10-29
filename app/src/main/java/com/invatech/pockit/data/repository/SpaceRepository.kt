@@ -197,6 +197,10 @@ class SpaceRepository(
     /**
      * Adds an expense to the space subcollection and updates space total.
      */
+    /**
+     * Adds an expense to the space subcollection.
+     * Enforces that the payer is always the authenticated user (cannot add expense for someone else).
+     */
     suspend fun addExpense(
         spaceId: String,
         title: String,
@@ -204,6 +208,7 @@ class SpaceRepository(
         paidById: String,
         shares: Map<String, Double>
     ) {
+        val actualPayerId = currentUserId // Enforce current user as payer
         val expenseId = UUID.randomUUID().toString()
         val dateLabel = todayLabel()
 
@@ -211,10 +216,11 @@ class SpaceRepository(
             "id" to expenseId,
             "title" to title.trim(),
             "amount" to amount,
-            "paidById" to paidById,
+            "paidById" to actualPayerId,
             "shares" to shares,
             "dateLabel" to dateLabel,
             "isSettlement" to false,
+            "isConfirmed" to true,
             "createdAt" to FieldValue.serverTimestamp()
         )
 
@@ -228,6 +234,7 @@ class SpaceRepository(
 
     /**
      * Records a settlement payment between two members.
+     * Initialized with isConfirmed = false until the receiver confirms payment receipt.
      */
     suspend fun settle(spaceId: String, settlement: Settlement) {
         val expenseId = UUID.randomUUID().toString()
@@ -241,6 +248,7 @@ class SpaceRepository(
             "shares" to mapOf(settlement.toId to settlement.amount),
             "dateLabel" to dateLabel,
             "isSettlement" to true,
+            "isConfirmed" to false, // Requires receiver confirmation
             "createdAt" to FieldValue.serverTimestamp()
         )
 
@@ -252,12 +260,171 @@ class SpaceRepository(
             .await()
     }
 
+    /**
+     * Confirms that a settlement payment was received. Only the receiver (creditor) can confirm.
+     */
+    suspend fun confirmSettlement(spaceId: String, expenseId: String): Result<Unit> = runCatching {
+        val expenseRef = firestore.collection("spaces")
+            .document(spaceId)
+            .collection("expenses")
+            .document(expenseId)
+
+        val doc = expenseRef.get().await()
+        @Suppress("UNCHECKED_CAST")
+        val shares = doc.get("shares") as? Map<String, Any> ?: emptyMap()
+        val receiverId = shares.keys.firstOrNull() ?: ""
+
+        if (receiverId.isNotEmpty() && receiverId != currentUserId) {
+            throw IllegalStateException("Only the receiver of this payment can confirm it")
+        }
+
+        expenseRef.update("isConfirmed", true).await()
+    }
+
+    /**
+     * Declines or cancels an unconfirmed settlement payment.
+     */
+    suspend fun rejectSettlement(spaceId: String, expenseId: String): Result<Unit> = runCatching {
+        val expenseRef = firestore.collection("spaces")
+            .document(spaceId)
+            .collection("expenses")
+            .document(expenseId)
+
+        val doc = expenseRef.get().await()
+        @Suppress("UNCHECKED_CAST")
+        val shares = doc.get("shares") as? Map<String, Any> ?: emptyMap()
+        val receiverId = shares.keys.firstOrNull() ?: ""
+        val paidById = doc.getString("paidById") ?: ""
+
+        if (currentUserId != receiverId && currentUserId != paidById) {
+            throw IllegalStateException("Not authorized to decline this payment")
+        }
+
+        expenseRef.delete().await()
+    }
+
+    /**
+     * Deletes an expense document from the space subcollection in Firestore.
+     * Only the transaction owner who paid for the expense can delete it.
+     */
+    suspend fun deleteExpense(spaceId: String, expenseId: String): Result<Unit> = runCatching {
+        val expenseRef = firestore.collection("spaces")
+            .document(spaceId)
+            .collection("expenses")
+            .document(expenseId)
+
+        val doc = expenseRef.get().await()
+        val paidById = doc.getString("paidById") ?: ""
+
+        if (paidById.isNotEmpty() && paidById != currentUserId) {
+            throw IllegalStateException("Only the owner of this transaction can delete it")
+        }
+
+        expenseRef.delete().await()
+    }
+
+    /**
+     * Restores a previously deleted expense document back to Firestore.
+     */
+    suspend fun restoreExpense(spaceId: String, expense: SpaceExpense) {
+        val expenseData = mapOf(
+            "id" to expense.id,
+            "title" to expense.title,
+            "amount" to expense.amount,
+            "paidById" to expense.paidById,
+            "shares" to expense.shares,
+            "dateLabel" to expense.dateLabel,
+            "isSettlement" to expense.isSettlement,
+            "isConfirmed" to expense.isConfirmed,
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+
+        firestore.collection("spaces")
+            .document(spaceId)
+            .collection("expenses")
+            .document(expense.id)
+            .set(expenseData)
+            .await()
+    }
+
+    /**
+     * Renames an existing space in Firestore.
+     */
+    suspend fun renameSpace(spaceId: String, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty()) return
+        firestore.collection("spaces")
+            .document(spaceId)
+            .update("name", trimmed)
+            .await()
+    }
+
+    /**
+     * Removes a member from a space. Only the creator of the space can do it.
+     */
+    suspend fun removeMember(spaceId: String, memberId: String): Result<Unit> = runCatching {
+        val spaceRef = firestore.collection("spaces").document(spaceId)
+        val doc = spaceRef.get().await()
+        val creatorId = doc.getString("createdBy") ?: ""
+
+        if (creatorId.isNotEmpty() && creatorId != currentUserId) {
+            throw IllegalStateException("Only the creator of the space can remove members")
+        }
+        if (memberId == creatorId) {
+            throw IllegalArgumentException("Cannot remove the creator of the space")
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        val currentMembers = (doc.get("members") as? List<Map<String, String>>) ?: emptyList()
+        val updatedMembers = currentMembers.filterNot { it["id"] == memberId }
+
+        @Suppress("UNCHECKED_CAST")
+        val currentMemberIds = (doc.get("memberIds") as? List<String>) ?: emptyList()
+        val updatedMemberIds = currentMemberIds.filterNot { it == memberId }
+
+        spaceRef.update(
+            mapOf(
+                "members" to updatedMembers,
+                "memberIds" to updatedMemberIds
+            )
+        ).await()
+    }
+
+    /**
+     * Deletes a space along with all expenses inside its subcollection.
+     * Only the creator of the space can do it.
+     */
+    suspend fun deleteSpace(spaceId: String): Result<Unit> = runCatching {
+        val spaceRef = firestore.collection("spaces").document(spaceId)
+        val doc = spaceRef.get().await()
+        val creatorId = doc.getString("createdBy") ?: ""
+
+        if (creatorId.isNotEmpty() && creatorId != currentUserId) {
+            throw IllegalStateException("Only the creator of the space can delete it")
+        }
+
+        // 1. Delete all expenses in the subcollection
+        val expensesSnapshot = spaceRef.collection("expenses").get().await()
+        val chunks = expensesSnapshot.documents.chunked(450)
+        for (chunk in chunks) {
+            val batch = firestore.batch()
+            for (expenseDoc in chunk) {
+                batch.delete(expenseDoc.reference)
+            }
+            batch.commit().await()
+        }
+
+        // 2. Delete the space document itself
+        spaceRef.delete().await()
+    }
+
     private fun mapDocumentToSpace(doc: com.google.firebase.firestore.DocumentSnapshot): Space? {
         val id = doc.getString("id") ?: doc.id
         val name = doc.getString("name") ?: return null
         val emoji = doc.getString("emoji") ?: "🏠"
         val themeIndex = (doc.getLong("themeIndex") ?: 0L).toInt()
         val inviteCode = doc.getString("inviteCode") ?: ""
+        val createdBy = doc.getString("createdBy") ?: ""
 
         @Suppress("UNCHECKED_CAST")
         val membersRaw = doc.get("members") as? List<Map<String, String>> ?: emptyList()
@@ -274,7 +441,8 @@ class SpaceRepository(
             themeIndex = themeIndex,
             inviteCode = inviteCode,
             members = members,
-            expenses = emptyList() // Will be combined with real-time expenses
+            expenses = emptyList(),
+            createdBy = createdBy
         )
     }
 
@@ -298,6 +466,7 @@ class SpaceRepository(
 
         val dateLabel = doc.getString("dateLabel") ?: "Today"
         val isSettlement = doc.getBoolean("isSettlement") ?: false
+        val isConfirmed = doc.getBoolean("isConfirmed") ?: true
 
         return SpaceExpense(
             id = id,
@@ -306,7 +475,8 @@ class SpaceRepository(
             paidById = paidById,
             shares = shares,
             dateLabel = dateLabel,
-            isSettlement = isSettlement
+            isSettlement = isSettlement,
+            isConfirmed = isConfirmed
         )
     }
 
