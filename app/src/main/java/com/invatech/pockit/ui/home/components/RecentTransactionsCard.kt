@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.invatech.pockit.ui.common.motion.M3Spring
+import com.invatech.pockit.ui.common.swipe.SwipeToDeleteContainer
 import com.invatech.pockit.ui.home.model.Transaction
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.InkMuted
@@ -35,21 +37,22 @@ import com.invatech.pockit.ui.theme.MintDeep
 fun RecentTransactionsCard(
     transactions: List<Transaction>,
     modifier: Modifier = Modifier,
-    onViewAll: () -> Unit = {}
+    onViewAll: () -> Unit = {},
+    onDeleteTransaction: ((Transaction) -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val viewAllScale by animateFloatAsState(
         targetValue = if (isPressed) 0.92f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = M3Spring.touchFeedback(),
         label = "view_all_scale"
     )
 
+    val isLight = MaterialTheme.colorScheme.background == com.invatech.pockit.ui.theme.Cloud
+
     Surface(
-        color = Ink,
+        color = if (isLight) Ink else MaterialTheme.colorScheme.surface,
+        border = if (isLight) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = RoundedCornerShape(32.dp),
         modifier = modifier.fillMaxWidth()
     ) {
@@ -67,7 +70,7 @@ fun RecentTransactionsCard(
                     text = "Recent",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = if (isLight) Color.White else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 if (transactions.isNotEmpty()) {
@@ -105,7 +108,18 @@ fun RecentTransactionsCard(
             } else {
                 // Strictly take maximum 5 transactions on the home screen
                 transactions.take(5).forEach { transaction ->
-                    TransactionItem(transaction = transaction)
+                    if (onDeleteTransaction != null && transaction.stringId.isNotBlank()) {
+                        SwipeToDeleteContainer(
+                            itemKey = transaction.stringId,
+                            shape = RoundedCornerShape(22.dp),
+                            requireConfirmation = true,
+                            onDelete = { onDeleteTransaction(transaction) }
+                        ) {
+                            TransactionItem(transaction = transaction)
+                        }
+                    } else {
+                        TransactionItem(transaction = transaction)
+                    }
                 }
             }
         }

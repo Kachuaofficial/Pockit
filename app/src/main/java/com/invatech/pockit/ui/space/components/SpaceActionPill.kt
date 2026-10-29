@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.invatech.pockit.ui.common.motion.M3Spring
 import com.invatech.pockit.ui.theme.Ink
 
 @Composable
@@ -43,10 +44,7 @@ fun SpaceActionPill(
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.94f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = M3Spring.touchFeedback(),
         label = "pill_scale"
     )
 
@@ -68,13 +66,13 @@ fun SpaceActionPill(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Ink),
+                .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(20.dp)
             )
         }

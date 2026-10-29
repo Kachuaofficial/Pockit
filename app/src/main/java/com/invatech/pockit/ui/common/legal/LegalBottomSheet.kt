@@ -58,7 +58,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.space.components.PockitPrimaryButton
 import com.invatech.pockit.ui.theme.Cloud
 import com.invatech.pockit.ui.theme.CloudDeep
@@ -168,11 +167,11 @@ fun LegalBottomSheet(
                     )
 
                     val bgColor by animateColorAsState(
-                        targetValue = if (isSelected) Ink else Cloud,
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                         label = "tab_bg_${doc.name}"
                     )
                     val textColor by animateColorAsState(
-                        targetValue = if (isSelected) Color.White else InkMuted,
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         label = "tab_text_${doc.name}"
                     )
 
@@ -201,7 +200,7 @@ fun LegalBottomSheet(
                             )
                             Text(
                                 text = doc.title,
-                                fontSize = 13.sp,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = textColor
                             )
@@ -297,8 +296,8 @@ private fun PrivacyPolicyContent() {
 
         LegalSection(
             number = "4",
-            title = "Third-Party Services",
-            body = "Pockit integrates with Google Identity Services for secure authentication and Google Cloud Firestore for synchronized database persistence. We do not sell, rent, or monetize your personal or financial log data to any third-party advertisers."
+            title = "Third-Party Services & Advertising",
+            body = "Pockit integrates with Google Identity Services for authentication, Firebase for database sync, and Google AdMob for delivering non-intrusive advertisements to support free development. AdMob and its advertising partners may process device identifiers and anonymized usage data in accordance with Google's Privacy Policy. European and UK users can manage their consent choices at any time via the User Messaging Platform dialog."
         )
 
         LegalSection(
@@ -387,7 +386,7 @@ private fun CopyrightContent() {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "© 2026 Pockit Technologies Inc.",
+                    text = "Â© 2026 Pockit Technologies Inc.",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = Ink
@@ -443,8 +442,7 @@ private fun LegalSection(
         Text(
             text = body,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 20.sp
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

@@ -24,6 +24,7 @@ import com.invatech.pockit.ui.theme.Cloud
 import com.invatech.pockit.ui.theme.CloudDeep
 import com.invatech.pockit.ui.theme.InkSoft
 import com.invatech.pockit.ui.theme.Mint
+import com.invatech.pockit.ui.theme.ShimmerDarkHighlight
 
 /**
  * Material 3 Expressive Shimmer effect modifier.
@@ -44,7 +45,7 @@ fun Modifier.expressiveShimmer(
     }
 
     val defaultHighlight = highlightColor ?: if (isDark) {
-        Color(0xFF2D2E33)
+        ShimmerDarkHighlight
     } else {
         Cloud.copy(alpha = 0.95f)
     }

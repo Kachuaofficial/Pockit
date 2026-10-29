@@ -36,7 +36,7 @@ fun PaidBySelector(
             Row(
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(if (selected) Ink else MaterialTheme.colorScheme.surface)
+                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                     .clickable { onSelect(member.id) }
                     .padding(start = 6.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -47,7 +47,7 @@ fun PaidBySelector(
                     text = member.displayName,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
             }
         }

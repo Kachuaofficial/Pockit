@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -22,11 +25,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.invatech.pockit.ui.space.SpaceViewModel
 import com.invatech.pockit.ui.space.components.AmountCard
-import com.invatech.pockit.ui.space.components.PaidBySelector
+import com.invatech.pockit.ui.space.components.MemberAvatar
 import com.invatech.pockit.ui.space.components.PockitPrimaryButton
 import com.invatech.pockit.ui.space.components.PockitTopBar
 import com.invatech.pockit.ui.space.components.SectionTitle
@@ -34,11 +38,14 @@ import com.invatech.pockit.ui.space.components.SoftTextField
 import com.invatech.pockit.ui.space.components.SplitMemberRow
 import com.invatech.pockit.ui.space.components.SplitModeToggle
 import com.invatech.pockit.ui.space.model.CurrentUserId
-import com.invatech.pockit.ui.space.model.OwedColor
+import com.invatech.pockit.ui.space.model.Member
+import com.invatech.pockit.ui.theme.OwedColor
 import com.invatech.pockit.ui.space.model.SplitMode
 import com.invatech.pockit.ui.space.util.BalanceCalculator
 import com.invatech.pockit.ui.space.util.formatMoney
 import com.invatech.pockit.ui.theme.ErrorRed
+import com.invatech.pockit.ui.theme.Ink
+import com.invatech.pockit.ui.theme.Mint
 import kotlin.math.abs
 
 private val MoneyInput = Regex("""\d{0,7}(\.\d{0,2})?""")
@@ -55,13 +62,16 @@ fun AddExpenseScreen(
 
     var title by remember { mutableStateOf("") }
     var amountText by remember { mutableStateOf("") }
-    var paidById by remember { mutableStateOf(CurrentUserId) }
+    // Enforce that user can only add their own expense
+    val paidById = CurrentUserId
     var mode by remember { mutableStateOf(SplitMode.Equal) }
     var selectedIds by remember { mutableStateOf(members.map { it.id }.toSet()) }
     val customAmounts = remember { mutableStateMapOf<String, String>() }
 
     val amount = amountText.toDoubleOrNull() ?: 0.0
-    val shares: Map<String, Double> = when (mode) {
+    val shares: Map<String, Double> = if (space.isHousehold) {
+        mapOf(paidById to amount)
+    } else when (mode) {
         SplitMode.Equal -> BalanceCalculator.splitEqually(
             amount = amount,
             ids = members.map { it.id }.filter { it in selectedIds }
@@ -75,7 +85,11 @@ fun AddExpenseScreen(
     }
     val remaining = amount - shares.values.sum()
     val isBalanced = abs(remaining) < 0.01
-    val isValid = title.isNotBlank() && amount > 0 && shares.isNotEmpty() && isBalanced
+    val isValid = if (space.isHousehold) {
+        title.isNotBlank() && amount > 0
+    } else {
+        title.isNotBlank() && amount > 0 && shares.isNotEmpty() && isBalanced
+    }
 
     val (statusText, statusColor) = when (mode) {
         SplitMode.Equal -> {
@@ -119,49 +133,114 @@ fun AddExpenseScreen(
             )
 
             SectionTitle("Paid by")
-            PaidBySelector(
-                members = members,
-                selectedId = paidById,
-                onSelect = { paidById = it }
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                SectionTitle("Split", modifier = Modifier.weight(1f))
-                SplitModeToggle(
-                    mode = mode,
-                    onModeChange = { mode = it },
-                    modifier = Modifier.width(190.dp)
-                )
-            }
-
-            members.forEach { member ->
-                SplitMemberRow(
-                    member = member,
-                    mode = mode,
-                    selected = member.id in selectedIds,
-                    equalShare = shares[member.id] ?: 0.0,
-                    customText = customAmounts[member.id] ?: "",
-                    onToggle = {
-                        selectedIds = if (member.id in selectedIds) {
-                            selectedIds - member.id
-                        } else {
-                            selectedIds + member.id
-                        }
-                    },
-                    onCustomChange = { value ->
-                        if (MoneyInput.matches(value)) customAmounts[member.id] = value
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val currentMember = members.firstOrNull { it.isYou } ?: Member(CurrentUserId, "You")
+                    MemberAvatar(member = currentMember, size = 40.dp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "You",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "You paid for this expense",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                )
+                    Surface(
+                        color = Mint,
+                        shape = CircleShape
+                    ) {
+                        Text(
+                            text = "Payer",
+                            color = Ink,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
             }
 
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.labelMedium,
-                color = statusColor
-            )
+            if (space.isHousehold) {
+                Surface(
+                    color = Mint.copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(text = "🏡", style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                text = "Joint Household Expense",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Text(
+                            text = "This expense will be added to your shared household total without creating debt splits.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SectionTitle("Split", modifier = Modifier.weight(1f))
+                    SplitModeToggle(
+                        mode = mode,
+                        onModeChange = { mode = it },
+                        modifier = Modifier.width(190.dp)
+                    )
+                }
+
+                members.forEach { member ->
+                    SplitMemberRow(
+                        member = member,
+                        mode = mode,
+                        selected = member.id in selectedIds,
+                        equalShare = shares[member.id] ?: 0.0,
+                        customText = customAmounts[member.id] ?: "",
+                        onToggle = {
+                            selectedIds = if (member.id in selectedIds) {
+                                selectedIds - member.id
+                            } else {
+                                selectedIds + member.id
+                            }
+                        },
+                        onCustomChange = { value ->
+                            if (MoneyInput.matches(value)) customAmounts[member.id] = value
+                        }
+                    )
+                }
+
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = statusColor
+                )
+            }
         }
 
         Box(modifier = Modifier.padding(20.dp)) {

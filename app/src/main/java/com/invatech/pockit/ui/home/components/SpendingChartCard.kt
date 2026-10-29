@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -38,7 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.home.model.DaySpending
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.Lavender
@@ -66,9 +66,14 @@ fun SpendingChartCard(
         mutableStateOf(if (highestIndex >= 0) highestIndex else data.lastIndex)
     }
 
-    val total = remember(data) {
-        data.sumOf { it.amount.toDouble() }.toInt()
-    }
+    val animatedTotal by animateFloatAsState(
+        targetValue = data.sumOf { it.amount.toDouble() }.toFloat(),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "spending_total_counter"
+    )
 
     Surface(
         color = Mint,
@@ -87,8 +92,8 @@ fun SpendingChartCard(
                         color = Ink.copy(alpha = 0.65f)
                     )
                     Text(
-                        text = "₹$total",
-                        fontSize = 28.sp,
+                        text = "₹${animatedTotal.toInt()}",
+                        style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = Ink
                     )
@@ -170,7 +175,7 @@ fun SpendingChartCard(
                             ) {
                                 Text(
                                     text = "₹${day.amount.toInt()}",
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Ink
                                 )

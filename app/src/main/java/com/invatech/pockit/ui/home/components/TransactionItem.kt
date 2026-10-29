@@ -38,11 +38,16 @@ fun TransactionItem(
         .getIntegerInstance(Locale.forLanguageTag("en-IN"))
         .format(transaction.amount.toLong())
 
+    val isLight = MaterialTheme.colorScheme.background == com.invatech.pockit.ui.theme.Cloud
+    val itemBg = if (isLight) InkSoft else MaterialTheme.colorScheme.surfaceVariant
+    val titleColor = if (isLight) Color.White else MaterialTheme.colorScheme.onSurface
+    val expenseColor = if (isLight) Color.White else MaterialTheme.colorScheme.onSurface
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(InkSoft)
+            .background(itemBg)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -66,7 +71,7 @@ fun TransactionItem(
             Text(
                 text = transaction.title,
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White
+                color = titleColor
             )
             Text(
                 text = transaction.category.label,
@@ -80,7 +85,7 @@ fun TransactionItem(
                 text = (if (transaction.isExpense) "-₹" else "+₹") + amountText,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (transaction.isExpense) Color.White else MintDeep
+                color = if (transaction.isExpense) expenseColor else MintDeep
             )
             Text(
                 text = transaction.dateLabel,

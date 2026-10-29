@@ -1,5 +1,6 @@
 package com.invatech.pockit.ui.profile
 
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -11,6 +12,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,20 +34,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Copyright
-import androidx.compose.material.icons.rounded.CurrencyRupee
-import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Fingerprint
-import androidx.compose.material.icons.rounded.HelpOutline
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Logout
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Shield
-import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +54,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,8 +69,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import androidx.fragment.app.FragmentActivity
+import com.invatech.pockit.data.biometric.BiometricAuthManager
 import com.invatech.pockit.ui.common.legal.LegalBottomSheet
 import com.invatech.pockit.ui.common.legal.LegalDocType
 import com.invatech.pockit.ui.theme.Cloud
@@ -83,7 +83,11 @@ import com.invatech.pockit.ui.theme.InkMuted
 import com.invatech.pockit.ui.theme.Lavender
 import com.invatech.pockit.ui.theme.LavenderDeep
 import com.invatech.pockit.ui.theme.Mint
+import com.invatech.pockit.ui.theme.PalettePicker
 import com.invatech.pockit.ui.theme.Peach
+import com.invatech.pockit.ui.theme.PockitPalette
+import com.invatech.pockit.ui.theme.ThemeManager
+import com.invatech.pockit.ui.theme.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,32 +102,35 @@ fun ProfileScreen(
                 context.packageManager.getPackageInfo(
                     context.packageName,
                     PackageManager.PackageInfoFlags.of(0)
-                ).versionName ?: "1.1"
+                ).versionName ?: "1.6"
             } else {
                 @Suppress("DEPRECATION")
-                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.1"
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.6"
             }
         } catch (_: Exception) {
-            "1.1"
+            "1.6"
         }
     }
     val currentUser = remember { FirebaseAuth.getInstance().currentUser }
-    val displayName = currentUser?.displayName ?: "Kaizen"
-    val email = currentUser?.email ?: "user@pockit.app"
+    val displayName = currentUser?.displayName?.ifBlank { null } ?: "User"
+    val email = currentUser?.email ?: ""
     val userInitial = displayName.firstOrNull()?.uppercase() ?: "P"
 
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showLegalSheet by remember { mutableStateOf(false) }
+    var showThemeSheet by remember { mutableStateOf(false) }
     var legalDocType by remember { mutableStateOf(LegalDocType.PRIVACY_POLICY) }
-    var biometricsEnabled by remember { mutableStateOf(true) }
-    var notificationsEnabled by remember { mutableStateOf(true) }
+    val currentThemeMode by ThemeManager.themeMode.collectAsState()
+    val currentPalette by ThemeManager.palette.collectAsState()
+    val biometricManager = remember { BiometricAuthManager(context) }
+    var biometricsEnabled by remember { mutableStateOf(biometricManager.isBiometricEnabled) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // 1. Hero Profile Header
+        // 1. Hero Profile Header with Initial Avatar
         item {
             Column(
                 modifier = Modifier
@@ -131,20 +138,20 @@ fun ProfileScreen(
                     .padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Animated Avatar with Gradient Halo
+                // Initial-based Profile Circle Avatar matching current theme
                 Box(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
-                        .background(Lavender)
-                        .border(3.dp, Mint, CircleShape),
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                        .border(3.dp, MaterialTheme.colorScheme.primaryContainer, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = userInitial,
-                        fontSize = 38.sp,
+                        style = MaterialTheme.typography.displayLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Ink
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
 
@@ -152,7 +159,7 @@ fun ProfileScreen(
 
                 Text(
                     text = displayName,
-                    fontSize = 24.sp,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -164,66 +171,10 @@ fun ProfileScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = InkMuted
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Surface(
-                    color = Mint,
-                    shape = CircleShape
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Verified,
-                            contentDescription = null,
-                            tint = Ink,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = "Pockit Member",
-                            color = Ink,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
             }
         }
 
-        // 2. Bento Quick Summary Stats
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                BentoStatCard(
-                    title = "Currency",
-                    value = "₹ INR",
-                    icon = Icons.Rounded.CurrencyRupee,
-                    backgroundColor = Cloud,
-                    modifier = Modifier.weight(1f)
-                )
-                BentoStatCard(
-                    title = "Security",
-                    value = "Active",
-                    icon = Icons.Rounded.Security,
-                    backgroundColor = Peach,
-                    modifier = Modifier.weight(1f)
-                )
-                BentoStatCard(
-                    title = "Plan",
-                    value = "Pro",
-                    icon = Icons.Rounded.Verified,
-                    backgroundColor = Lavender,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        // 3. Preferences Section
+        // 2. Preferences Section
         item {
             Text(
                 text = "Preferences",
@@ -244,28 +195,94 @@ fun ProfileScreen(
                     SettingToggleRow(
                         icon = Icons.Rounded.Fingerprint,
                         title = "App Lock & Biometrics",
-                        subtitle = "Require fingerprint / face to open",
+                        subtitle = if (biometricsEnabled) "Fingerprint / face lock active" else "Require fingerprint / face to open",
                         checked = biometricsEnabled,
-                        onCheckedChange = { biometricsEnabled = it }
+                        onCheckedChange = { enable ->
+                            if (enable) {
+                                if (!biometricManager.canAuthenticate()) {
+                                    Toast.makeText(
+                                        context,
+                                        "No biometrics or screen lock enrolled on this device",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    val activity = context as? FragmentActivity
+                                    if (activity != null) {
+                                        biometricManager.promptBiometric(
+                                            activity = activity,
+                                            title = "Enable App Lock",
+                                            subtitle = "Verify fingerprint or face to enable",
+                                            onSuccess = {
+                                                biometricManager.isBiometricEnabled = true
+                                                biometricsEnabled = true
+                                                Toast.makeText(context, "App lock enabled!", Toast.LENGTH_SHORT).show()
+                                            },
+                                            onError = { _, err ->
+                                                Toast.makeText(context, "Failed: $err", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+                                    } else {
+                                        biometricManager.isBiometricEnabled = true
+                                        biometricsEnabled = true
+                                    }
+                                }
+                            } else {
+                                biometricManager.isBiometricEnabled = false
+                                biometricsEnabled = false
+                                Toast.makeText(context, "App lock disabled", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    SettingToggleRow(
-                        icon = Icons.Rounded.Notifications,
-                        title = "Push Notifications",
-                        subtitle = "Alerts on bill splits and updates",
-                        checked = notificationsEnabled,
-                        onCheckedChange = { notificationsEnabled = it }
+                    SettingActionRow(
+                        icon = Icons.Rounded.Settings,
+                        title = "Appearance & Theme",
+                        subtitle = "${currentPalette.title} · ${currentThemeMode.title}",
+                        trailingText = currentPalette.title,
+                        onClick = { showThemeSheet = true }
                     )
                 }
             }
         }
 
-        // 4. Data & Support Section
+        // 2b. Color Palettes Quick Strip
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Color Palette",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "${currentPalette.title} active",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            PalettePicker(
+                selected = currentPalette,
+                onSelect = { ThemeManager.setPalette(it) },
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp)
+            )
+        }
+
+        // 3. Support & Feedback Section
         item {
             Text(
-                text = "Data & Account",
+                text = "Support & Feedback",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -281,29 +298,28 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     SettingActionRow(
-                        icon = Icons.Rounded.FileDownload,
-                        title = "Export Transactions",
-                        subtitle = "Download CSV spreadsheet",
-                        onClick = {
-                            Toast.makeText(context, "Exporting statement...", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    SettingActionRow(
-                        icon = Icons.Rounded.HelpOutline,
+                        icon = Icons.AutoMirrored.Rounded.HelpOutline,
                         title = "Help & Support",
-                        subtitle = "FAQs and contact support",
+                        subtitle = "Contact the Pockit team directly",
                         onClick = {
-                            Toast.makeText(context, "Pockit Support: hello@pockit.app", Toast.LENGTH_LONG).show()
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                data = android.net.Uri.parse("mailto:invatechstudioz@gmail.com")
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "Pockit Support & Feedback")
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Contact: invatechstudioz@gmail.com", Toast.LENGTH_LONG).show()
+                            }
                         }
                     )
+
+
                 }
             }
         }
 
-        // 5. Legal & Policies Section
+        // 4. Legal & Policies Section
         item {
             Text(
                 text = "Legal & Policies",
@@ -358,7 +374,7 @@ fun ProfileScreen(
             }
         }
 
-        // 6. Sign Out Button
+        // 5. Sign Out Button
         item {
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -394,7 +410,7 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Logout,
+                        imageVector = Icons.AutoMirrored.Rounded.Logout,
                         contentDescription = "Sign Out",
                         tint = ErrorRed,
                         modifier = Modifier.size(20.dp)
@@ -409,7 +425,7 @@ fun ProfileScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -423,11 +439,115 @@ fun ProfileScreen(
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "© 2026 Pockit Technologies Inc. · All rights reserved",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    text = "© 2026 InvatechStudioz. · All rights reserved",
+                    style = MaterialTheme.typography.labelSmall,
                     color = InkMuted.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
                 )
+            }
+        }
+    }
+
+    // Theme Selection Bottom Sheet
+    if (showThemeSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showThemeSheet = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 36.dp, top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    Text(
+                        text = "Appearance & Theme",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Customize the color palette and brightness of Pockit.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Section 1: Color Palette
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "COLOR PALETTE",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                    PalettePicker(
+                        selected = currentPalette,
+                        onSelect = { ThemeManager.setPalette(it) },
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp)
+                    )
+                }
+
+                // Section 2: Mode (System, Light, Dark)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "THEME MODE",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    ThemeMode.entries.forEach { mode ->
+                        val isSelected = currentThemeMode == mode
+                        Surface(
+                            onClick = {
+                                ThemeManager.setThemeMode(mode)
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            border = if (isSelected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = mode.title,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = mode.subtitle,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.CheckCircle,
+                                        contentDescription = "Selected",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -440,7 +560,7 @@ fun ProfileScreen(
         )
     }
 
-    // Sign Out Confirmation Bottom Sheet (replacing old AlertDialog)
+    // Sign Out Confirmation Bottom Sheet
     if (showSignOutDialog) {
         ModalBottomSheet(
             onDismissRequest = { showSignOutDialog = false },
@@ -463,7 +583,7 @@ fun ProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Logout,
+                        imageVector = Icons.AutoMirrored.Rounded.Logout,
                         contentDescription = null,
                         tint = ErrorRed,
                         modifier = Modifier.size(30.dp)
@@ -511,45 +631,6 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun BentoStatCard(
-    title: String,
-    value: String,
-    icon: ImageVector,
-    backgroundColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color = backgroundColor,
-        shape = RoundedCornerShape(22.dp),
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Ink,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Ink
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = Ink.copy(alpha = 0.65f)
-            )
-        }
-    }
-}
-
-@Composable
 private fun SettingToggleRow(
     icon: ImageVector,
     title: String,
@@ -565,13 +646,13 @@ private fun SettingToggleRow(
             modifier = Modifier
                 .size(42.dp)
                 .clip(CircleShape)
-                .background(Cloud),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Ink,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -595,10 +676,10 @@ private fun SettingToggleRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Ink,
-                checkedTrackColor = Mint,
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = InkMuted,
-                uncheckedTrackColor = Cloud
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
     }
@@ -609,13 +690,14 @@ private fun SettingActionRow(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    trailingText: String? = null,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        animationSpec = com.invatech.pockit.ui.common.motion.M3Spring.touchFeedback(),
         label = "row_scale"
     )
 
@@ -636,13 +718,13 @@ private fun SettingActionRow(
             modifier = Modifier
                 .size(42.dp)
                 .clip(CircleShape)
-                .background(Cloud),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Ink,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -660,6 +742,22 @@ private fun SettingActionRow(
                 style = MaterialTheme.typography.labelMedium,
                 color = InkMuted
             )
+        }
+
+        if (trailingText != null) {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.padding(end = 6.dp)
+            ) {
+                Text(
+                    text = trailingText,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
         }
 
         Icon(

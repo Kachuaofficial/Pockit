@@ -114,7 +114,7 @@ fun LoginScreen(
                     Text(
                         text = "Your money,\nbeautifully simple.",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
 
@@ -148,7 +148,7 @@ fun LoginScreen(
                                 Text(
                                     text = "Signing in...",
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = Color.White
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -186,8 +186,8 @@ fun LoginScreen(
                                 Text(
                                     text = "G",
                                     color = Ink,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 16.sp
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold
                                 )
                             }
                             Spacer(modifier = Modifier.size(12.dp))
@@ -264,7 +264,7 @@ fun LoginScreen(
 
                         Text(
                             text = "© 2026 Pockit Technologies Inc.",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            style = MaterialTheme.typography.labelSmall,
                             color = InkMuted.copy(alpha = 0.6f),
                             textAlign = TextAlign.Center
                         )
@@ -312,16 +312,16 @@ private fun HeroCard(appeared: Boolean) {
                     Text(
                         text = "P",
                         color = Mint,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold
                     )
                 }
                 Spacer(modifier = Modifier.size(10.dp))
                 Text(
                     text = "POCKIT",
                     color = Ink,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
                     letterSpacing = 3.sp
                 )
             }
@@ -365,8 +365,8 @@ private fun Chip(text: String, background: Color, modifier: Modifier = Modifier)
         Text(
             text = text,
             color = Ink,
+            style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp)
         )
     }

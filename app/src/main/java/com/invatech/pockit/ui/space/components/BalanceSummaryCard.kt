@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.space.util.formatMoney
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.InkMuted
@@ -98,7 +97,7 @@ fun BalanceSummaryCard(
                 )
                 Text(
                     text = formatMoney(animatedBalance.toDouble()),
-                    fontSize = 34.sp,
+                    style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = accent
                 )

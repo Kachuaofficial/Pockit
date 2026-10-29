@@ -11,8 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.ReceiptLong
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -43,9 +44,11 @@ fun SpaceExpenseItem(
     val payerName = payer?.displayName ?: "Someone"
     val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant
     val myShare = expense.shares[CurrentUserId]
+    val isPendingSettlement = expense.isSettlement && !expense.isConfirmed
 
     val (statusText, statusColor) = when {
-        expense.isSettlement -> "settlement" to mutedColor
+        isPendingSettlement -> "Pending confirmation" to ErrorRed
+        expense.isSettlement -> "Settled up ✓" to OwedColor
         expense.paidById == CurrentUserId -> {
             val lent = expense.amount - (myShare ?: 0.0)
             if (lent > 0.005) "you lent ${formatMoney(lent)}" to OwedColor
@@ -57,7 +60,11 @@ fun SpaceExpenseItem(
 
     val subtitle = if (expense.isSettlement) {
         val receiver = expense.shares.keys.firstOrNull()?.let { members[it] }
-        "$payerName paid ${receiver?.sentenceName ?: "someone"} · ${expense.dateLabel}"
+        if (isPendingSettlement) {
+            "$payerName sent payment to ${receiver?.sentenceName ?: "someone"} · ${expense.dateLabel}"
+        } else {
+            "$payerName paid ${receiver?.sentenceName ?: "someone"} · ${expense.dateLabel}"
+        }
     } else {
         "Paid by $payerName · ${expense.dateLabel}"
     }
@@ -72,15 +79,26 @@ fun SpaceExpenseItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            val iconBackground = when {
+                isPendingSettlement -> Peach
+                expense.isSettlement -> Mint
+                else -> Peach
+            }
+            val iconVector = when {
+                isPendingSettlement -> Icons.Rounded.Schedule
+                expense.isSettlement -> Icons.Rounded.CheckCircle
+                else -> Icons.AutoMirrored.Rounded.ReceiptLong
+            }
+
             Box(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(CircleShape)
-                    .background(if (expense.isSettlement) Mint else Peach),
+                    .background(iconBackground),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (expense.isSettlement) Icons.Rounded.CheckCircle else Icons.Rounded.ReceiptLong,
+                    imageVector = iconVector,
                     contentDescription = null,
                     tint = Ink
                 )
@@ -109,6 +127,7 @@ fun SpaceExpenseItem(
                 Text(
                     text = statusText,
                     style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (isPendingSettlement) FontWeight.Bold else FontWeight.Normal,
                     color = statusColor
                 )
             }

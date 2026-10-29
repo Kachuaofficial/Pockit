@@ -17,11 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.Mint
 
@@ -45,8 +42,7 @@ fun AmountCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "₹",
-                    fontSize = 44.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.displayLarge,
                     color = Ink
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -54,11 +50,7 @@ fun AmountCard(
                     value = amountText,
                     onValueChange = onAmountChange,
                     singleLine = true,
-                    textStyle = TextStyle(
-                        fontSize = 44.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Ink
-                    ),
+                    textStyle = MaterialTheme.typography.displayLarge.copy(color = Ink),
                     cursorBrush = SolidColor(Ink),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
@@ -67,8 +59,7 @@ fun AmountCard(
                             if (amountText.isEmpty()) {
                                 Text(
                                     text = "0",
-                                    fontSize = 44.sp,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    style = MaterialTheme.typography.displayLarge,
                                     color = Ink.copy(alpha = 0.25f)
                                 )
                             }

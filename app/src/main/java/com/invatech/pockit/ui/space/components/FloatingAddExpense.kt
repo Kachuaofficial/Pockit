@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.invatech.pockit.ui.common.motion.M3Spring
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.Mint
 
@@ -36,23 +37,20 @@ fun FloatingAddExpense(
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.94f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = M3Spring.touchFeedback(),
         label = "fab_scale"
     )
 
     val elevation by animateDpAsState(
         targetValue = if (isPressed) 3.dp else 8.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        animationSpec = M3Spring.fastEffects(),
         label = "fab_elevation"
     )
 
     Surface(
         onClick = onClick,
         interactionSource = interactionSource,
-        color = Ink,
+        color = MaterialTheme.colorScheme.primary,
         shape = CircleShape,
         shadowElevation = elevation,
         modifier = modifier.scale(scale)
@@ -64,12 +62,12 @@ fun FloatingAddExpense(
             Icon(
                 imageVector = Icons.Rounded.Add,
                 contentDescription = null,
-                tint = Mint
+                tint = MaterialTheme.colorScheme.onPrimary
             )
             Text(
                 text = "Add expense",
                 modifier = Modifier.padding(start = 10.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.titleMedium
             )
         }

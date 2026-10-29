@@ -28,6 +28,8 @@ import com.invatech.pockit.ui.common.loading.ShimmerBox
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.InkSoft
 import com.invatech.pockit.ui.theme.Mint
+import com.invatech.pockit.ui.theme.ShimmerDarkBase
+import com.invatech.pockit.ui.theme.ShimmerDarkHighlight
 
 /**
  * High-production Material 3 Expressive Skeleton screen for HomeScreen.
@@ -101,26 +103,6 @@ fun HomeScreenSkeleton(
                         .height(48.dp),
                     shape = RoundedCornerShape(12.dp)
                 )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ShimmerBox(
-                        modifier = Modifier
-                            .width(64.dp)
-                            .height(28.dp),
-                        shape = CircleShape
-                    )
-                    ShimmerBox(
-                        modifier = Modifier
-                            .width(90.dp)
-                            .height(16.dp),
-                        shape = RoundedCornerShape(6.dp)
-                    )
-                }
             }
         }
 
@@ -242,7 +224,7 @@ fun HomeScreenSkeleton(
                                 .height(20.dp),
                             shape = RoundedCornerShape(6.dp),
                             baseColor = InkSoft,
-                            highlightColor = Color(0xFF2E2F35)
+                            highlightColor = ShimmerDarkHighlight
                         )
                         Spacer(modifier = Modifier.weight(1f))
                         ShimmerBox(
@@ -251,7 +233,7 @@ fun HomeScreenSkeleton(
                                 .height(16.dp),
                             shape = RoundedCornerShape(6.dp),
                             baseColor = InkSoft,
-                            highlightColor = Color(0xFF2E2F35)
+                            highlightColor = ShimmerDarkHighlight
                         )
                     }
 
@@ -269,8 +251,8 @@ fun HomeScreenSkeleton(
                             ShimmerBox(
                                 modifier = Modifier.size(42.dp),
                                 shape = CircleShape,
-                                baseColor = Color(0xFF26272B),
-                                highlightColor = Color(0xFF33353B)
+                                baseColor = ShimmerDarkBase,
+                                highlightColor = ShimmerDarkHighlight
                             )
 
                             Column(modifier = Modifier.weight(1f)) {
@@ -279,8 +261,8 @@ fun HomeScreenSkeleton(
                                         .width(110.dp)
                                         .height(16.dp),
                                     shape = RoundedCornerShape(6.dp),
-                                    baseColor = Color(0xFF26272B),
-                                    highlightColor = Color(0xFF33353B)
+                                    baseColor = ShimmerDarkBase,
+                                    highlightColor = ShimmerDarkHighlight
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 ShimmerBox(
@@ -288,8 +270,8 @@ fun HomeScreenSkeleton(
                                         .width(70.dp)
                                         .height(12.dp),
                                     shape = RoundedCornerShape(4.dp),
-                                    baseColor = Color(0xFF26272B),
-                                    highlightColor = Color(0xFF33353B)
+                                    baseColor = ShimmerDarkBase,
+                                    highlightColor = ShimmerDarkHighlight
                                 )
                             }
 
@@ -299,8 +281,8 @@ fun HomeScreenSkeleton(
                                         .width(65.dp)
                                         .height(16.dp),
                                     shape = RoundedCornerShape(6.dp),
-                                    baseColor = Color(0xFF26272B),
-                                    highlightColor = Color(0xFF33353B)
+                                    baseColor = ShimmerDarkBase,
+                                    highlightColor = ShimmerDarkHighlight
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 ShimmerBox(
@@ -308,8 +290,8 @@ fun HomeScreenSkeleton(
                                         .width(45.dp)
                                         .height(12.dp),
                                     shape = RoundedCornerShape(4.dp),
-                                    baseColor = Color(0xFF26272B),
-                                    highlightColor = Color(0xFF33353B)
+                                    baseColor = ShimmerDarkBase,
+                                    highlightColor = ShimmerDarkHighlight
                                 )
                             }
                         }

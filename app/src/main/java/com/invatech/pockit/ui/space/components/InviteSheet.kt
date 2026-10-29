@@ -116,7 +116,7 @@ fun InviteSheet(
                     )
                     Text(
                         text = space.inviteCode,
-                        fontSize = 38.sp,
+                        style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 6.sp,
                         color = Ink
@@ -139,8 +139,8 @@ fun InviteSheet(
                 InviteActionButton(
                     label = "Share",
                     icon = Icons.Rounded.Share,
-                    container = Ink,
-                    content = Color.White,
+                    container = MaterialTheme.colorScheme.primary,
+                    content = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.weight(1f),
                     onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply {

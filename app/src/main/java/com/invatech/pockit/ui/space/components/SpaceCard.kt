@@ -37,7 +37,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.invatech.pockit.ui.common.motion.M3Spring
 import com.invatech.pockit.ui.space.model.CurrentUserId
 import com.invatech.pockit.ui.space.model.Space
 import com.invatech.pockit.ui.space.util.BalanceCalculator
@@ -56,10 +56,7 @@ fun SpaceCard(
     // Smooth tactile spring animation on touch
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.965f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = M3Spring.touchFeedback(),
         label = "space_card_press_scale"
     )
 
@@ -78,6 +75,7 @@ fun SpaceCard(
             myBalance < -0.5 -> Color.White.copy(alpha = 0.9f)
             else -> Color.White.copy(alpha = 0.75f)
         },
+        animationSpec = M3Spring.fastEffects(),
         label = "status_badge_color"
     )
 
@@ -102,7 +100,7 @@ fun SpaceCard(
                     .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = space.emoji, fontSize = 26.sp)
+                Text(text = space.emoji, style = MaterialTheme.typography.headlineMedium)
             }
 
             Column(
@@ -112,7 +110,7 @@ fun SpaceCard(
             ) {
                 Text(
                     text = space.name,
-                    fontSize = 19.sp,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Ink
                 )

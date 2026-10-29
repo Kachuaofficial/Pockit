@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.space.model.Member
 import com.invatech.pockit.ui.space.model.SpaceAccents
 import com.invatech.pockit.ui.theme.Ink
@@ -38,10 +37,10 @@ fun MemberAvatar(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = member.name.firstOrNull()?.uppercase() ?: "?",
+            text = member.displayName.firstOrNull()?.uppercase() ?: "?",
             color = Ink,
             fontWeight = FontWeight.Bold,
-            fontSize = (size.value * 0.4f).sp
+            style = if (size >= 40.dp) androidx.compose.material3.MaterialTheme.typography.titleMedium else androidx.compose.material3.MaterialTheme.typography.labelSmall
         )
     }
 }
@@ -68,15 +67,15 @@ fun AvatarStack(
                 modifier = Modifier
                     .size(size)
                     .clip(CircleShape)
-                    .background(Ink)
+                    .background(androidx.compose.material3.MaterialTheme.colorScheme.primary)
                     .border(2.dp, borderColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "+${members.size - max}",
-                    color = Color.White,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold,
-                    fontSize = (size.value * 0.34f).sp
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall
                 )
             }
         }

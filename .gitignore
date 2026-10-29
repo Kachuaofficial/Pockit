@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Keystore & Signing credentials (Protect from VCS)
+*.jks
+*.keystore
+*.pem

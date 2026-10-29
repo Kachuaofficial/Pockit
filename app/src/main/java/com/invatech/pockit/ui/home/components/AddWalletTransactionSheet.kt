@@ -47,7 +47,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.common.loading.ExpressiveLoadingIndicator
 import com.invatech.pockit.ui.home.model.Category
 import com.invatech.pockit.ui.home.model.WalletTransactionType
@@ -272,9 +271,9 @@ private fun TypeToggleOption(
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = if (selected) Ink else InkMuted
+            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

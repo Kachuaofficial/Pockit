@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import com.google.firebase.auth.FirebaseAuth
 import com.invatech.pockit.ui.theme.Lavender
 import com.invatech.pockit.ui.theme.Mint
+import com.invatech.pockit.ui.theme.OwedColor
 import com.invatech.pockit.ui.theme.Peach
 import com.invatech.pockit.ui.theme.Rose
 
@@ -15,9 +16,7 @@ val CurrentUserId: String
 
 val SpaceAccents: List<Color> = listOf(Mint, Lavender, Peach, Rose)
 val SpaceEmojis = listOf("🏠", "✈️", "🍕", "🎉", "🏖️", "🛒", "🎬", "💼")
-
-/** Green used for "you get back" text on light surfaces. */
-val OwedColor = Color(0xFF2E9B82)
+val OwedColor: Color = com.invatech.pockit.ui.theme.OwedColor
 
 data class Member(
     val id: String,
@@ -36,8 +35,14 @@ data class SpaceExpense(
     /** memberId -> amount that member owes for this expense. */
     val shares: Map<String, Double>,
     val dateLabel: String,
-    val isSettlement: Boolean = false
+    val isSettlement: Boolean = false,
+    val isConfirmed: Boolean = true
 )
+
+enum class SpaceType {
+    BILL_SPLIT,
+    HOUSEHOLD
+}
 
 data class Space(
     val id: String,
@@ -47,10 +52,16 @@ data class Space(
     val inviteCode: String,
     val members: List<Member>,
     /** Newest first. */
-    val expenses: List<SpaceExpense> = emptyList()
+    val expenses: List<SpaceExpense> = emptyList(),
+    val createdBy: String = "",
+    val type: SpaceType = SpaceType.BILL_SPLIT
 ) {
     val accent: Color get() = SpaceAccents[themeIndex.mod(SpaceAccents.size)]
-    val totalSpent: Double get() = expenses.filter { !it.isSettlement }.sumOf { it.amount }
+    val totalSpent: Double get() = expenses.filter { !it.isSettlement && it.isConfirmed }.sumOf { it.amount }
+    val isHousehold: Boolean get() = type == SpaceType.HOUSEHOLD
+    val isCreator: Boolean
+        get() = (createdBy.isNotEmpty() && createdBy == CurrentUserId) ||
+                (createdBy.isEmpty() && members.firstOrNull()?.isYou == true)
 }
 
 enum class SplitMode { Equal, Custom }

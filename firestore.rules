@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 1. Users collection: each user has full control over their own profile and subcollections
+    match /users/{userId} {
+      // Allow authenticated users to read profiles (e.g. for friend search / display names)
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+
+      // Wallet and personal transactions: strictly private to the authenticated owner
+      match /wallets/{walletId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /transactions/{transactionId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // 2. Spaces collection: shared multiplayer group expense spaces
+    match /spaces/{spaceId} {
+      // Space is readable and updatable only by members of the space
+      allow read: if isAuthenticated() && (request.auth.uid in resource.data.memberIds);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        // Existing member or joining via invite code (adding themselves to memberIds)
+        (request.auth.uid in resource.data.memberIds) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'members']))
+      );
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+
+      // Expenses within a space
+      match /expenses/{expenseId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    // 3. Friendships collection: barcode / QR connected 1-to-1 friendships
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated() && (request.auth.uid in resource.data.users);
+      allow create: if isAuthenticated() && (request.auth.uid in request.resource.data.users);
+      allow update, delete: if isAuthenticated() && (request.auth.uid in resource.data.users);
+    }
+
+    // 4. Friend transactions collection: 1-to-1 udhar and settlements
+    match /friend_transactions/{txId} {
+      allow read: if isAuthenticated() && (request.auth.uid in resource.data.participantIds);
+      allow create: if isAuthenticated() && (request.auth.uid in request.resource.data.participantIds);
+      allow update, delete: if isAuthenticated() && (request.auth.uid in resource.data.participantIds);
+    }
+  }
+}

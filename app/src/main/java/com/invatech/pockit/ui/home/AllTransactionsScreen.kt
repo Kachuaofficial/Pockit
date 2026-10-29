@@ -30,16 +30,27 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +60,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.invatech.pockit.ui.common.ads.PockitBannerAd
+import com.invatech.pockit.ui.common.motion.M3Spring
+import com.invatech.pockit.ui.common.swipe.SwipeToDeleteContainer
 import com.invatech.pockit.ui.home.components.TransactionItem
 import com.invatech.pockit.ui.home.model.Category
 import com.invatech.pockit.ui.home.model.Transaction
@@ -57,10 +70,14 @@ import com.invatech.pockit.ui.home.model.WalletTransactionType
 import com.invatech.pockit.ui.space.components.PockitTopBar
 import com.invatech.pockit.ui.space.components.SoftTextField
 import com.invatech.pockit.ui.theme.Cloud
+import com.invatech.pockit.ui.theme.ErrorRed
+import com.invatech.pockit.ui.theme.ErrorSoft
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.InkMuted
 import com.invatech.pockit.ui.theme.Mint
+import com.invatech.pockit.ui.theme.MintDeep
 import com.invatech.pockit.ui.theme.Peach
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 enum class TransactionFilter {
@@ -77,6 +94,9 @@ fun AllTransactionsScreen(
 
     var selectedFilter by remember { mutableStateOf(TransactionFilter.ALL) }
     var searchQuery by remember { mutableStateOf("") }
+    var transactionToDelete by remember { mutableStateOf<Transaction?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     val allTransactions = remember(uiState.transactions) {
         uiState.transactions.map { item ->
@@ -90,7 +110,8 @@ fun AllTransactionsScreen(
                 isExpense = item.type == WalletTransactionType.EXPENSE,
                 dateLabel = item.createdAt?.toDate()?.let {
                     java.text.SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(it)
-                } ?: "Recent"
+                } ?: "Recent",
+                stringId = item.id
             )
         }
     }
@@ -110,116 +131,266 @@ fun AllTransactionsScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        PockitTopBar(
-            title = "All Transactions",
-            onBack = onBack
-        )
-
-        // Filter Pills & Search Section
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Search Bar
-            SoftTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = "Search transactions...",
-                modifier = Modifier.fillMaxWidth()
+            PockitTopBar(
+                title = "All Transactions",
+                onBack = onBack
             )
 
-            // Filter Tabs (All / Expenses / Income)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Filter Pills & Search Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                FilterTabPill(
-                    label = "All (${allTransactions.size})",
-                    selected = selectedFilter == TransactionFilter.ALL,
-                    activeColor = Ink,
-                    activeTextColor = Color.White,
-                    onClick = { selectedFilter = TransactionFilter.ALL },
-                    modifier = Modifier.weight(1f)
+                // Search Bar
+                SoftTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = "Search transactions...",
+                    modifier = Modifier.fillMaxWidth()
                 )
-                FilterTabPill(
-                    label = "Expenses",
-                    selected = selectedFilter == TransactionFilter.EXPENSE,
-                    activeColor = Peach,
-                    activeTextColor = Ink,
-                    onClick = { selectedFilter = TransactionFilter.EXPENSE },
-                    modifier = Modifier.weight(1f)
-                )
-                FilterTabPill(
-                    label = "Income",
-                    selected = selectedFilter == TransactionFilter.INCOME,
-                    activeColor = Mint,
-                    activeTextColor = Ink,
-                    onClick = { selectedFilter = TransactionFilter.INCOME },
-                    modifier = Modifier.weight(1f)
-                )
+
+                // Filter Tabs (All / Expenses / Income)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterTabPill(
+                        label = "All (${allTransactions.size})",
+                        selected = selectedFilter == TransactionFilter.ALL,
+                        activeColor = MaterialTheme.colorScheme.primary,
+                        activeTextColor = MaterialTheme.colorScheme.onPrimary,
+                        onClick = { selectedFilter = TransactionFilter.ALL },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterTabPill(
+                        label = "Expenses",
+                        selected = selectedFilter == TransactionFilter.EXPENSE,
+                        activeColor = MaterialTheme.colorScheme.tertiary,
+                        activeTextColor = MaterialTheme.colorScheme.onTertiary,
+                        onClick = { selectedFilter = TransactionFilter.EXPENSE },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterTabPill(
+                        label = "Income",
+                        selected = selectedFilter == TransactionFilter.INCOME,
+                        activeColor = MaterialTheme.colorScheme.primaryContainer,
+                        activeTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        onClick = { selectedFilter = TransactionFilter.INCOME },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Transactions List
+            if (filteredTransactions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = null,
+                                tint = InkMuted,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = if (searchQuery.isNotBlank()) "No transactions found matching '$searchQuery'" else "No transactions in this category yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = InkMuted,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 4.dp,
+                        bottom = 80.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(filteredTransactions, key = { it.stringId.ifEmpty { it.id.toString() } }) { tx ->
+                        SwipeToDeleteContainer(
+                            itemKey = tx.stringId.ifEmpty { tx.id.toString() },
+                            shape = RoundedCornerShape(22.dp),
+                            requireConfirmation = true,
+                            onDelete = {
+                                transactionToDelete = tx
+                            },
+                            modifier = Modifier.animateItem()
+                        ) {
+                            TransactionItem(
+                                transaction = tx
+                            )
+                        }
+                    }
+
+                    item {
+                        PockitBannerAd(modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 20.dp)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                containerColor = MaterialTheme.colorScheme.onBackground,
+                contentColor = MaterialTheme.colorScheme.background,
+                actionColor = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(18.dp)
+            )
+        }
+    }
 
-        // Transactions List
-        if (filteredTransactions.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .clip(CircleShape)
-                            .background(Cloud),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = null,
-                            tint = InkMuted,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
+    // Delete Transaction Confirmation Alert Dialog
+    transactionToDelete?.let { targetTx ->
+        AlertDialog(
+            onDismissRequest = { transactionToDelete = null },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(ErrorSoft),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.DeleteOutline,
+                        contentDescription = null,
+                        tint = ErrorRed,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            },
+            title = {
+                Text(
+                    text = "Delete Transaction?",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
-                        text = if (searchQuery.isNotBlank()) "No transactions found matching '$searchQuery'" else "No transactions in this category yet",
+                        text = "Are you sure you want to delete this transaction? Your wallet balance will be updated.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = InkMuted,
                         textAlign = TextAlign.Center
                     )
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = targetTx.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Ink,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "â‚¹${"%,.2f".format(targetTx.amount)}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = if (targetTx.isExpense) ErrorRed else MintDeep
+                            )
+                        }
+                    }
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    start = 20.dp,
-                    end = 20.dp,
-                    top = 4.dp,
-                    bottom = 32.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(filteredTransactions, key = { it.id }) { tx ->
-                    TransactionItem(
-                        transaction = tx,
-                        modifier = Modifier.animateItem()
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val txToRem = targetTx
+                        transactionToDelete = null
+                        val matchingUiTx = uiState.transactions.firstOrNull { it.id == txToRem.stringId }
+                        homeViewModel.deleteTransaction(txToRem.stringId)
+                        coroutineScope.launch {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            val result = snackbarHostState.showSnackbar(
+                                message = "\"${txToRem.title}\" deleted",
+                                actionLabel = "Undo",
+                                duration = SnackbarDuration.Short
+                            )
+                            if (result == SnackbarResult.ActionPerformed && matchingUiTx != null) {
+                                homeViewModel.restoreTransaction(matchingUiTx)
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = "Delete",
+                        fontWeight = FontWeight.Bold
                     )
                 }
-            }
-        }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { transactionToDelete = null }
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = InkMuted,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 }
 
@@ -236,20 +407,19 @@ private fun FilterTabPill(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.94f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = M3Spring.touchFeedback(),
         label = "pill_scale"
     )
 
     val bgColor by animateColorAsState(
-        targetValue = if (selected) activeColor else Cloud,
+        targetValue = if (selected) activeColor else MaterialTheme.colorScheme.surfaceVariant,
+        animationSpec = M3Spring.fastEffects(),
         label = "pill_bg"
     )
 
     val textColor by animateColorAsState(
-        targetValue = if (selected) activeTextColor else InkMuted,
+        targetValue = if (selected) activeTextColor else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = M3Spring.fastEffects(),
         label = "pill_text"
     )
 
@@ -267,7 +437,7 @@ private fun FilterTabPill(
     ) {
         Text(
             text = label,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             color = textColor,
             textAlign = TextAlign.Center,

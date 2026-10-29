@@ -34,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.common.loading.ShimmerBox
 import com.invatech.pockit.ui.space.components.CreateSpaceSheet
 import com.invatech.pockit.ui.space.components.JoinSpaceSheet
@@ -65,7 +64,7 @@ fun SpaceScreen(
             Column {
                 Text(
                     text = "Spaces",
-                    fontSize = 32.sp,
+                    style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -169,8 +168,8 @@ fun SpaceScreen(
     if (showCreate) {
         CreateSpaceSheet(
             onDismiss = { showCreate = false },
-            onCreate = { name, emoji, themeIndex ->
-                viewModel.createSpace(name, emoji, themeIndex) { id ->
+            onCreate = { name, emoji, themeIndex, type ->
+                viewModel.createSpace(name, emoji, themeIndex, type) { id ->
                     showCreate = false
                     onOpenSpace(id)
                 }

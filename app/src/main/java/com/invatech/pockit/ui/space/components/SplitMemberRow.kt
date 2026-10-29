@@ -41,11 +41,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.space.model.Member
 import com.invatech.pockit.ui.space.model.SplitMode
 import com.invatech.pockit.ui.space.util.formatMoney
@@ -77,13 +75,15 @@ fun SplitMemberRow(
         label = "check_scale"
     )
 
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
     val checkBg by animateColorAsState(
-        targetValue = if (selected) Ink else Color.Transparent,
+        targetValue = if (selected) primaryColor else Color.Transparent,
         label = "check_bg_color"
     )
 
     val checkBorder by animateColorAsState(
-        targetValue = if (selected) Ink else CloudDeep,
+        targetValue = if (selected) primaryColor else MaterialTheme.colorScheme.outlineVariant,
         label = "check_border_color"
     )
 
@@ -144,7 +144,7 @@ fun SplitMemberRow(
                                 Icon(
                                     imageVector = Icons.Rounded.Check,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = onPrimaryColor,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -155,27 +155,34 @@ fun SplitMemberRow(
                         modifier = Modifier
                             .width(120.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(Cloud)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "₹", color = Ink.copy(alpha = 0.6f), fontSize = 16.sp)
+                        Text(
+                            text = "₹",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.titleMedium
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
                         BasicTextField(
                             value = customText,
                             onValueChange = onCustomChange,
                             singleLine = true,
-                            textStyle = TextStyle(
-                                fontSize = 16.sp,
+                            textStyle = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
-                                color = Ink
+                                color = MaterialTheme.colorScheme.onSurface
                             ),
-                            cursorBrush = SolidColor(Ink),
+                            cursorBrush = SolidColor(primaryColor),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             decorationBox = { inner ->
                                 Box {
                                     if (customText.isEmpty()) {
-                                        Text(text = "0", color = InkMuted, fontSize = 16.sp)
+                                        Text(
+                                            text = "0",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
                                     }
                                     inner()
                                 }
