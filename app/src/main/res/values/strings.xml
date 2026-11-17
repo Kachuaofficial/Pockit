@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Pockit</string>
+    <string name="upi_notification_service_label">Pockit UPI Auto-Expense</string>
+    <string name="widget_description">Glance at today\'s expenses, balance, and quick-add with Pockit Mascot.</string>
 </resources>

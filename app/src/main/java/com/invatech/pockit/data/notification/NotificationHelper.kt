@@ -34,8 +34,11 @@ object NotificationHelper {
         context: Context,
         title: String,
         body: String,
-        extraData: Map<String, String> = emptyMap()
+        extraData: Map<String, String> = emptyMap(),
+        stableId: Int? = null
     ) {
+        if (!androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) return
+        if (Build.VERSION.SDK_INT >= 33 && androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return
         createNotificationChannel(context)
 
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -46,7 +49,7 @@ object NotificationHelper {
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            System.currentTimeMillis().toInt(),
+            stableId ?: System.currentTimeMillis().toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -63,7 +66,7 @@ object NotificationHelper {
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-        val notificationId = (System.currentTimeMillis() % 100000).toInt()
+        val notificationId = stableId ?: (System.currentTimeMillis() % 100000).toInt()
         notificationManager?.notify(notificationId, notification)
     }
 }

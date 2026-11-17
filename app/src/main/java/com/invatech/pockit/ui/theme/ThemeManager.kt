@@ -13,20 +13,18 @@ object ThemeManager {
 
     private lateinit var prefs: SharedPreferences
 
-    private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
+    private val _themeMode = MutableStateFlow(ThemeMode.LIGHT)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
     private val _palette = MutableStateFlow(PockitPalette.Default)
     val palette: StateFlow<PockitPalette> = _palette.asStateFlow()
 
-    /** Call once from Application.onCreate (or before the first setContent). */
     fun init(context: Context) {
         prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        val savedMode = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name
-        _themeMode.value = runCatching { ThemeMode.valueOf(savedMode) }.getOrDefault(ThemeMode.SYSTEM)
+        val savedMode = prefs.getString(KEY_THEME_MODE, ThemeMode.LIGHT.name) ?: ThemeMode.LIGHT.name
+        _themeMode.value = runCatching { ThemeMode.valueOf(savedMode) }.getOrDefault(ThemeMode.LIGHT)
 
-        // Existing installs have no palette key yet, so they fall back to the Pockit default.
         _palette.value = PockitPalette.fromId(prefs.getString(KEY_PALETTE, null))
     }
 

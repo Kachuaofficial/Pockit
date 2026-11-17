@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,12 +37,8 @@ fun MemberAvatar(
             .border(2.dp, borderColor, CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = member.displayName.firstOrNull()?.uppercase() ?: "?",
-            color = Ink,
-            fontWeight = FontWeight.Bold,
-            style = if (size >= 40.dp) androidx.compose.material3.MaterialTheme.typography.titleMedium else androidx.compose.material3.MaterialTheme.typography.labelSmall
-        )
+        com.invatech.pockit.ui.common.UserAvatar(member.id, member.name,
+            Modifier.size(size).padding(2.dp))
     }
 }
 

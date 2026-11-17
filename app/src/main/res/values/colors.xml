@@ -8,10 +8,11 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Pockit Brand Colors -->
-    <color name="pockit_cloud">#FFF4F4F1</color>
-    <color name="pockit_ink">#FF111111</color>
-    <color name="pockit_mint">#FFCFEBE4</color>
-    <color name="pockit_mint_deep">#FF7FD1BE</color>
-    <color name="pockit_lavender">#FFE5D9F6</color>
+    <!-- Pockit Brand Warm Colors -->
+    <color name="pockit_cloud">#FFFDF9F2</color>
+    <color name="pockit_ink">#FF352B27</color>
+    <color name="pockit_mint">#FFDCF5E8</color>
+    <color name="pockit_mint_deep">#FF52B69A</color>
+    <color name="pockit_lavender">#FFF5E3F7</color>
+    <color name="pockit_peach">#FFFFE7D1</color>
 </resources>

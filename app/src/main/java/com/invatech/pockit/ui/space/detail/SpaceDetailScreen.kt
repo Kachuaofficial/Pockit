@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -57,6 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.invatech.pockit.ui.common.ads.PockitNativeAdCard
 import com.invatech.pockit.ui.common.swipe.SwipeToDeleteContainer
 import com.invatech.pockit.ui.space.SpaceViewModel
 import com.invatech.pockit.ui.space.components.BalanceSummaryCard
@@ -108,8 +110,11 @@ fun SpaceDetailScreen(
     var memberToRemove by remember { mutableStateOf<Member?>(null) }
     var expenseToDelete by remember { mutableStateOf<SpaceExpense?>(null) }
 
-    val balances = remember(space) { BalanceCalculator.netBalances(space) }
-    val settlements = remember(balances) { BalanceCalculator.settlements(balances) }
+    val balanceResult = remember(space) { runCatching { BalanceCalculator.netBalances(space) } }
+    val balances = balanceResult.getOrDefault(emptyMap())
+    val settlementResult = remember(balances) { runCatching { BalanceCalculator.settlements(balances) } }
+    val settlements = settlementResult.getOrDefault(emptyList())
+    val reconciliationError = balanceResult.exceptionOrNull() ?: settlementResult.exceptionOrNull()
     val membersById = remember(space) { space.members.associateBy { it.id } }
 
     val pendingSettlements = remember(space.expenses) {
@@ -208,6 +213,9 @@ fun SpaceDetailScreen(
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (reconciliationError != null) item {
+                    Text("These expense shares do not reconcile. Check the entries before settling up.", color = MaterialTheme.colorScheme.error)
+                }
                 item {
                     SpaceHeaderCard(
                         space = space,
@@ -421,25 +429,30 @@ fun SpaceDetailScreen(
                         )
                     }
                 } else {
-                    items(space.expenses, key = { it.id }) { expense ->
+                    itemsIndexed(space.expenses, key = { _, expense -> expense.id }) { index, expense ->
                         // Only the transaction owner who paid for the expense can delete it
                         val isOwner = expense.paidById == CurrentUserId
-                        SwipeToDeleteContainer(
-                            itemKey = expense.id,
-                            shape = RoundedCornerShape(24.dp),
-                            enabled = isOwner,
-                            requireConfirmation = true,
-                            onDelete = {
-                                if (isOwner) {
-                                    expenseToDelete = expense
-                                }
-                            },
-                            modifier = Modifier.animateItem()
-                        ) {
-                            SpaceExpenseItem(
-                                expense = expense,
-                                members = membersById
-                            )
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            SwipeToDeleteContainer(
+                                itemKey = expense.id,
+                                shape = RoundedCornerShape(24.dp),
+                                enabled = isOwner,
+                                requireConfirmation = true,
+                                onDelete = {
+                                    if (isOwner) {
+                                        expenseToDelete = expense
+                                    }
+                                },
+                                modifier = Modifier.animateItem()
+                            ) {
+                                SpaceExpenseItem(
+                                    expense = expense,
+                                    members = membersById
+                                )
+                            }
+                            if (index == 7 && index < space.expenses.lastIndex) {
+                                PockitNativeAdCard(placementKey = "SpaceDetailScreen.native.1", modifier = Modifier.padding(vertical = 4.dp))
+                            }
                         }
                     }
                 }

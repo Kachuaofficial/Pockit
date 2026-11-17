@@ -1,46 +1,64 @@
 package com.invatech.pockit.data.ads
 
-import android.app.Activity
 import android.content.Context
 import android.util.Log
-import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.rewarded.RewardItem
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.google.android.libraries.ads.mobile.sdk.MobileAds
+import com.google.android.libraries.ads.mobile.sdk.initialization.InitializationConfig
+import com.google.android.ump.UserMessagingPlatform
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Global ad manager for Pockit.
- * In compliance with user preference, only non-intrusive banner ads are enabled.
- * All interstitial, popup, and rewarded ads have been completely removed.
- */
+/** Session initialization only: Pockit serves banner and native ads, never fullscreen ads. */
 object AdManager {
-
-    private const val TAG = "AdManager"
-    private val isMobileAdsInitialized = AtomicBoolean(false)
+    private val ready = MutableStateFlow(false)
+    val adsReady = ready.asStateFlow()
+    private val started = AtomicBoolean(false)
+    private val initialized = AtomicBoolean(false)
+    private val privacyChoicesOpen = AtomicBoolean(false)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun initialize(context: Context) {
-        if (isMobileAdsInitialized.getAndSet(true)) return
-
-        MobileAds.initialize(context) { status ->
-            Log.d(TAG, "MobileAds initialized for banner ads: $status")
+        val app = context.applicationContext
+        val allowed = !privacyChoicesOpen.get() && UserMessagingPlatform.getConsentInformation(app).canRequestAds()
+        ready.value = allowed && initialized.get()
+        if (!allowed || started.getAndSet(true)) return
+        // Never overwrite publisher privacy/age settings or SDK-managed test-device configuration.
+        scope.launch {
+            try {
+                MobileAds.initialize(app, InitializationConfig.Builder(AdConfig.APP_ID).build()) { status ->
+                    scope.launch(Dispatchers.Main.immediate) {
+                        initialized.set(true)
+                        ready.value = !privacyChoicesOpen.get() && UserMessagingPlatform.getConsentInformation(app).canRequestAds()
+                        status.adapterStatusMap.forEach { (adapter, state) ->
+                            Log.d("AdManager", "$adapter: ${state.initializationState}; ${state.description}")
+                        }
+                    }
+                }
+            } catch (error: Exception) {
+                started.set(false)
+                Log.e("AdManager", "Mobile Ads initialization failed", error)
+            }
         }
     }
 
-    /**
-     * No-op: Full-screen interstitial ads have been disabled.
-     * Immediately proceeds with user action without showing any ad.
-     */
-    fun showInterstitialIfEligible(activity: Activity, onAdDismissed: () -> Unit) {
-        onAdDismissed()
+    fun beginPrivacyChoices() {
+        privacyChoicesOpen.set(true)
+        ready.value = false
     }
 
-    /**
-     * No-op: Rewarded ads have been disabled.
-     */
-    fun showRewardedAd(
-        activity: Activity,
-        onRewardEarned: (RewardItem) -> Unit,
-        onAdClosed: () -> Unit
-    ) {
-        onAdClosed()
+    fun finishPrivacyChoices(context: Context) {
+        privacyChoicesOpen.set(false)
+        initialize(context)
+    }
+
+    fun reportLoadFailure(format: String, error: LoadAdError) {
+        Log.w("PockitAds", "$format load failed: code=${error.code}, message=${error.message}, " +
+            "responseId=${error.responseInfo?.responseId}")
     }
 }

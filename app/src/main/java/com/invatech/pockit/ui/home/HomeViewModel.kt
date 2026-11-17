@@ -31,11 +31,48 @@ class HomeViewModel(
     private val walletRepository: WalletRepository = WalletRepository()
 ) : ViewModel() {
 
+    private var pendingAddRequest: Pair<String, String>? = null
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private var cloudListeners = emptyList<com.google.firebase.firestore.ListenerRegistration>()
+    override fun onCleared() { cloudListeners.forEach { it.remove() }; super.onCleared() }
     init {
+        cloudListeners = walletRepository.watchCloud(onTransactionsChanged = {
+            viewModelScope.launch {
+                try { walletRepository.getTransactions() }
+                catch (e: Exception) { _uiState.value = _uiState.value.copy(errorMessage = e.message) }
+            }
+        }, onError = { _uiState.value = _uiState.value.copy(errorMessage = it) })
+        viewModelScope.launch { walletRepository.observeBalance().collect { balance -> _uiState.value = _uiState.value.copy(balancePaise = balance) } }
+        observeLocalTransactions()
         loadWallet()
+    }
+
+    /**
+     * Observes Room database continuously so any local additions, edits, or syncs
+     * update the UI instantaneously with zero network latency.
+     */
+    private fun observeLocalTransactions() {
+        viewModelScope.launch {
+            walletRepository.observeTransactions().collect { roomList ->
+                run {
+                    _uiState.value = _uiState.value.copy(
+                        transactions = roomList.map { transaction ->
+                            HomeTransactionUi(
+                                id = transaction.id,
+                                title = transaction.title,
+                                amountPaise = transaction.amountPaise,
+                                type = transaction.type,
+                                category = transaction.category,
+                                createdAt = transaction.createdAt
+                            )
+                        },
+                        isInitialLoad = false
+                    )
+                }
+            }
+        }
     }
 
     fun loadWallet() {
@@ -50,7 +87,7 @@ class HomeViewModel(
                 val transactions = walletRepository.getTransactions()
 
                 _uiState.value = HomeUiState(
-                    balancePaise = balance,
+                    balancePaise = walletRepository.observeBalance().value,
                     transactions = transactions.map { transaction ->
                         HomeTransactionUi(
                             id = transaction.id,
@@ -114,12 +151,17 @@ class HomeViewModel(
             )
 
             try {
+                val fingerprint = "$title|$amountPaise|$type|$category"
+                val request = pendingAddRequest?.takeIf { it.first == fingerprint }
+                    ?: (fingerprint to java.util.UUID.randomUUID().toString()).also { pendingAddRequest = it }
                 val (newBalance, txId) = walletRepository.addTransaction(
                     title = title,
                     amountPaise = amountPaise,
                     type = type,
-                    category = category
+                    category = category,
+                    requestId = request.second
                 )
+                pendingAddRequest = null
 
                 // Cost-saving: Add to state locally instead of refetching entire Firestore history
                 val newTx = HomeTransactionUi(
@@ -133,7 +175,7 @@ class HomeViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     balancePaise = newBalance,
-                    transactions = listOf(newTx) + _uiState.value.transactions,
+                    transactions = listOf(newTx) + _uiState.value.transactions.filter { it.id != txId },
                     isLoading = false
                 )
             } catch (e: Exception) {
@@ -142,6 +184,21 @@ class HomeViewModel(
                     errorMessage = e.message
                         ?: "Transaction save nahi ho paya."
                 )
+            }
+        }
+    }
+
+    fun editBalance(value: Long, onSaved: () -> Unit) {
+        val expected = _uiState.value.balancePaise
+        if (_uiState.value.isLoading) return
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        viewModelScope.launch {
+            try {
+                walletRepository.setRecordedBalance(value, expected)
+                _uiState.value = _uiState.value.copy(balancePaise = value, isLoading = false)
+                onSaved()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message)
             }
         }
     }
@@ -203,6 +260,56 @@ class HomeViewModel(
                     transactions = previousTransactions,
                     balancePaise = previousBalance,
                     errorMessage = e.message ?: "Transaction restore nahi ho paya."
+                )
+            }
+        }
+    }
+
+    /**
+     * Updates an existing transaction with optimistic UI update.
+     */
+    fun updateTransaction(
+        transactionId: String,
+        title: String,
+        amountPaise: Long,
+        type: WalletTransactionType,
+        category: String
+    ) {
+        val previousTransactions = _uiState.value.transactions
+        val previousBalance = _uiState.value.balancePaise
+
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        // Optimistic UI update
+        _uiState.value = _uiState.value.copy(
+            transactions = previousTransactions.map { tx ->
+                if (tx.id == transactionId) {
+                    tx.copy(
+                        title = title.trim(),
+                        amountPaise = amountPaise,
+                        type = type,
+                        category = category
+                    )
+                } else tx
+            }
+        )
+
+        viewModelScope.launch {
+            try {
+                val newBalance = walletRepository.updateTransaction(
+                    transactionId = transactionId,
+                    newTitle = title,
+                    newAmountPaise = amountPaise,
+                    newType = type,
+                    newCategory = category
+                )
+                _uiState.value = _uiState.value.copy(balancePaise = newBalance, isLoading = false)
+            } catch (e: Exception) {
+                // Rollback on failure
+                _uiState.value = _uiState.value.copy(
+                    transactions = previousTransactions,
+                    balancePaise = previousBalance,
+                    isLoading = false,
+                    errorMessage = e.message ?: "Transaction update nahi ho paya."
                 )
             }
         }

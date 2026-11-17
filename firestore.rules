@@ -18,6 +18,33 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isOwner(userId);
 
+      match /ledgerBalances/{personId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /balanceAdjustments/{adjustmentId} {
+        allow read, create: if isOwner(userId);
+      }
+      match /financeRecords/{recordId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /settings/{settingId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /budgets/{budgetId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.monthlyLimitPaise is int
+          && request.resource.data.monthlyLimitPaise > 0
+          && request.resource.data.monthlyLimitPaise <= 100000000000;
+      }
+      match /subscriptions/{subscriptionId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // Wallet and personal transactions: strictly private to the authenticated owner
       match /wallets/{walletId} {
         allow read, write: if isOwner(userId);

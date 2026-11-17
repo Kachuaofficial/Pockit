@@ -36,4 +36,9 @@ interface NotificationDao {
 
     @Query("DELETE FROM notifications")
     suspend fun clearAllNotifications(): Int
+    @androidx.room.Transaction
+    suspend fun replaceCloudSnapshot(rows: List<NotificationEntity>) {
+        clearAllNotifications()
+        insertNotifications(rows)
+    }
 }

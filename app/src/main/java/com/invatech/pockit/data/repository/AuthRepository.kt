@@ -53,6 +53,8 @@ class AuthRepository(
                 }
             }.await()
 
+            com.invatech.pockit.data.rewards.UserRewardManager.syncWithFirebase()
+
             Result.success(Unit)
 
         } catch (exception: Exception) {

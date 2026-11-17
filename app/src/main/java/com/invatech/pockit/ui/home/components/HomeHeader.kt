@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.common.motion.rememberPressScale
 import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.Lavender
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
 import java.util.Calendar
 
 @Composable
@@ -39,15 +41,21 @@ fun HomeHeader(
     userName: String,
     modifier: Modifier = Modifier,
     unreadNotificationCount: Int = 0,
-    onNotificationClick: () -> Unit = {}
+    onNotificationClick: () -> Unit = {},
+    onRewardsClick: () -> Unit = {}
 ) {
     val notifSource = remember { MutableInteractionSource() }
     val notifScale by rememberPressScale(notifSource, pressedScale = 0.92f)
 
+    val coins by com.invatech.pockit.data.rewards.UserRewardManager.coinsFlow.collectAsState()
+    val canClaimDaily = remember(coins) { com.invatech.pockit.data.rewards.UserRewardManager.canClaimDailyReward() }
+    val coinSource = remember { MutableInteractionSource() }
+    val coinScale by rememberPressScale(coinSource, pressedScale = 0.92f)
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -61,6 +69,49 @@ fun HomeHeader(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        // Clickable Coin Balance Pill
+        Surface(
+            modifier = Modifier
+                .graphicsLayer {
+                    scaleX = coinScale
+                    scaleY = coinScale
+                }
+                .clip(CircleShape)
+                .clickable(
+                    interactionSource = coinSource,
+                    indication = null,
+                    onClick = onRewardsClick
+                ),
+            shape = CircleShape,
+            color = Color(0xFFFFF7DD),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFE082))
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "🪙",
+                    fontSize = 13.sp
+                )
+                Text(
+                    text = "$coins",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFFE67E00)
+                )
+                if (canClaimDaily) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE64A19))
+                    )
+                }
+            }
         }
 
         // Notification Bell Button with Unread Badge

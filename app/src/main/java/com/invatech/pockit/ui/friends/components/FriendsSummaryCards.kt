@@ -50,6 +50,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.invatech.pockit.ui.common.mascot.MascotPose
+import com.invatech.pockit.ui.common.mascot.PockitMascot
 import com.invatech.pockit.ui.common.motion.M3Spring
 import com.invatech.pockit.ui.friends.model.FriendsFilter
 import com.invatech.pockit.ui.space.util.formatMoney
@@ -104,18 +106,28 @@ fun FriendsSummaryCards(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Friends & Khata",
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Scan barcode to connect & split",
-                    fontSize = 13.sp,
-                    color = InkMuted
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
+                    Text(
+                        text = "Friends & Khata",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Scan barcode to connect & split",
+                        fontSize = 12.sp,
+                        color = InkMuted
+                    )
+                }
+                PockitMascot(
+                    pose = MascotPose.HAPPY_WAVING,
+                    size = 46.dp
                 )
             }
 

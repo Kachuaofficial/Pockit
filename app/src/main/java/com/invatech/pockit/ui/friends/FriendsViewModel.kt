@@ -220,7 +220,7 @@ class FriendsViewModel(
             // If currentBalance < 0, I owe money -> I am the payer
             // If currentBalance > 0, friend owes money -> friend is the payer
             val payerId = if (currentBalance < 0) myUid else friendId
-            val desc = if (payerId == myUid) "Paid full settlement (Awaiting confirmation)" else "Marked full settlement (Awaiting confirmation)"
+            val desc = if (payerId == myUid) "Paid settlement" else "Marked settlement"
             val txId = UUID.randomUUID().toString()
 
             repository.addExpense(

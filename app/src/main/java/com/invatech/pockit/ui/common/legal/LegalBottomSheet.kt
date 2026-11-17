@@ -279,7 +279,7 @@ private fun PrivacyPolicyContent() {
         LegalSection(
             number = "1",
             title = "Information We Collect",
-            body = "When you register or use Pockit, we receive profile information from Google Sign-In (name, email address, profile photo, and unique identifier). We also collect the wallet entries, expense titles, amounts, categories, and group memberships that you voluntarily enter into the application."
+            body = "When you register or use Pockit, we receive profile information from Google Sign-In (name, email address, profile photo, and unique identifier). We also store the wallet entries, expense titles, amounts, categories, and group memberships that you enter or explicitly approve. Optional UPI notification access prepares on-device payment drafts for your review; raw notification text is not retained. Approved wallet entries sync to Firebase. Personal udhar records, savings goals, pending payment reviews, planner details, notifications and preferences sync privately to your Firebase account. Name-only udhar records are not shared with the named friend. Local storage retains cached records for offline access."
         )
 
         LegalSection(

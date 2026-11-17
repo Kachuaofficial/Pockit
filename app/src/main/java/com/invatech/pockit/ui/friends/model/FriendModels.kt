@@ -123,26 +123,25 @@ data class FriendWithBalance(
      */
     val netBalance: Double
         get() {
-            var balance = 0.0
+            var balance = 0L
             for (t in transactions) {
                 if (t.status == TransactionStatus.REJECTED) continue
                 if (t.direction == ExpenseDirection.SETTLE_UP && t.status != TransactionStatus.CONFIRMED) continue
 
                 when (t.direction) {
-                    ExpenseDirection.GAVE_UDHAR -> balance += t.amount
-                    ExpenseDirection.TOOK_UDHAR -> balance -= t.amount
-                    ExpenseDirection.SETTLE_UP -> balance += t.amount
+                    ExpenseDirection.GAVE_UDHAR -> balance = Math.addExact(balance, com.invatech.pockit.domain.Money.legacyPaise(t.amount))
+                    ExpenseDirection.TOOK_UDHAR -> balance = Math.subtractExact(balance, com.invatech.pockit.domain.Money.legacyPaise(t.amount))
+                    ExpenseDirection.SETTLE_UP -> balance = Math.addExact(balance, com.invatech.pockit.domain.Money.legacyPaise(t.amount))
                 }
             }
-            val rounded = kotlin.math.round(balance * 100.0) / 100.0
-            return if (kotlin.math.abs(rounded) < 0.01) 0.0 else rounded
+            return balance / 100.0
         }
 
     val totalGave: Double
-        get() = transactions.filter { it.direction == ExpenseDirection.GAVE_UDHAR && it.status != TransactionStatus.REJECTED }.sumOf { it.amount }
+        get() = transactions.filter { it.direction == ExpenseDirection.GAVE_UDHAR && it.status != TransactionStatus.REJECTED }.let { rows -> com.invatech.pockit.domain.Money.sum(rows.map { com.invatech.pockit.domain.Money.legacyPaise(it.amount) }) / 100.0 }
 
     val totalTook: Double
-        get() = transactions.filter { it.direction == ExpenseDirection.TOOK_UDHAR && it.status != TransactionStatus.REJECTED }.sumOf { it.amount }
+        get() = transactions.filter { it.direction == ExpenseDirection.TOOK_UDHAR && it.status != TransactionStatus.REJECTED }.let { rows -> com.invatech.pockit.domain.Money.sum(rows.map { com.invatech.pockit.domain.Money.legacyPaise(it.amount) }) / 100.0 }
 
     val lastTransaction: FriendTransaction?
         get() = transactions.maxByOrNull { it.timestamp }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -51,7 +52,7 @@ fun SpaceActionPill(
     Row(
         modifier = modifier
             .scale(scale)
-            .height(60.dp)
+            .heightIn(min = 56.dp)
             .clip(CircleShape)
             .background(container)
             .clickable(
@@ -59,12 +60,12 @@ fun SpaceActionPill(
                 indication = null,
                 onClick = onClick
             )
-            .padding(horizontal = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(30.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center
@@ -79,7 +80,7 @@ fun SpaceActionPill(
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.labelLarge,
             color = Ink
         )
     }

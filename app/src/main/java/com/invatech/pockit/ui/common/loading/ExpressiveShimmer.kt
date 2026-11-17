@@ -7,9 +7,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -36,26 +36,12 @@ fun Modifier.expressiveShimmer(
     highlightColor: Color? = null,
     durationMillis: Int = 1200
 ): Modifier = composed {
-    val isDark = isSystemInDarkTheme()
+    val defaultBase = baseColor ?: CloudDeep
+    val defaultHighlight = highlightColor ?: Cloud.copy(alpha = 0.95f)
+    val brandTint = Mint.copy(alpha = 0.25f)
 
-    val defaultBase = baseColor ?: if (isDark) {
-        InkSoft
-    } else {
-        CloudDeep
-    }
-
-    val defaultHighlight = highlightColor ?: if (isDark) {
-        ShimmerDarkHighlight
-    } else {
-        Cloud.copy(alpha = 0.95f)
-    }
-
-    val brandTint = if (isDark) {
-        Mint.copy(alpha = 0.08f)
-    } else {
-        Mint.copy(alpha = 0.25f)
-    }
-
+    val enabled by com.invatech.pockit.ui.common.motion.MotionSettings.enabled.collectAsState()
+    if (!enabled) return@composed this.background(defaultBase)
     val transition = rememberInfiniteTransition(label = "expressive_shimmer_transition")
     val progress by transition.animateFloat(
         initialValue = -0.5f,

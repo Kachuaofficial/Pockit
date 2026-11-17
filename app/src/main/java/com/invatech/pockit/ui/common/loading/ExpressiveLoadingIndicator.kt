@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -66,6 +67,8 @@ fun ExpressiveLoadingIndicator(
     customColor: Color? = null,
     showHalo: Boolean = true
 ) {
+    val enabled by com.invatech.pockit.ui.common.motion.MotionSettings.enabled.collectAsState()
+    if (!enabled) { androidx.compose.material3.Text("Loading…", modifier = modifier); return }
     val transition = rememberInfiniteTransition(label = "expressive_morph_transition")
 
     // Rotation with expressive easing (fast acceleration + overshoot settle)
@@ -243,6 +246,8 @@ fun ExpressiveCircularIndicator(
     strokeWidth: Dp = 3.5.dp,
     color: Color = MintDeep
 ) {
+    val enabled by com.invatech.pockit.ui.common.motion.MotionSettings.enabled.collectAsState()
+    if (!enabled) { androidx.compose.material3.Text("Loading…", modifier = modifier); return }
     val transition = rememberInfiniteTransition(label = "circular_indeterminate_transition")
 
     val startAngle by transition.animateFloat(
@@ -299,6 +304,8 @@ fun ExpressivePulsingPills(
     maxHeight: Dp = 22.dp,
     minHeight: Dp = 8.dp
 ) {
+    val enabled by com.invatech.pockit.ui.common.motion.MotionSettings.enabled.collectAsState()
+    if (!enabled) { androidx.compose.material3.Text("Loading…", modifier = modifier); return }
     val transition = rememberInfiniteTransition(label = "expressive_pills_transition")
 
     Row(

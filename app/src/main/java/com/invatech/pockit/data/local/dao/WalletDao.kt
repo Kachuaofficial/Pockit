@@ -9,12 +9,40 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WalletDao {
+    @androidx.room.Transaction
+    suspend fun replaceSnapshot(rows: List<WalletTransactionEntity>) {
+        clearTransactions()
+        insertTransactions(rows)
+    }
+
 
     @Query("SELECT * FROM wallet_transactions ORDER BY createdAtMillis DESC")
     fun observeTransactions(): Flow<List<WalletTransactionEntity>>
 
     @Query("SELECT * FROM wallet_transactions ORDER BY createdAtMillis DESC LIMIT :limit")
     suspend fun getTransactions(limit: Int): List<WalletTransactionEntity>
+
+    @Query("SELECT * FROM wallet_transactions ORDER BY createdAtMillis DESC")
+    suspend fun getAllTransactions(): List<WalletTransactionEntity>
+
+    @Query("SELECT * FROM wallet_transactions WHERE id = :id LIMIT 1")
+    suspend fun getTransactionById(id: String): WalletTransactionEntity?
+
+    @Query("SELECT * FROM wallet_transactions WHERE amountPaise = :amountPaise AND type = :type AND createdAtMillis >= :sinceMillis LIMIT 1")
+    suspend fun findRecentSimilarTransaction(
+        amountPaise: Long,
+        type: com.invatech.pockit.ui.home.model.WalletTransactionType,
+        sinceMillis: Long
+    ): WalletTransactionEntity?
+
+    @Query("UPDATE wallet_transactions SET title = :title, amountPaise = :amountPaise, type = :type, category = :category WHERE id = :id")
+    suspend fun updateTransaction(
+        id: String,
+        title: String,
+        amountPaise: Long,
+        type: com.invatech.pockit.ui.home.model.WalletTransactionType,
+        category: String
+    ): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransactions(transactions: List<WalletTransactionEntity>): List<Long>

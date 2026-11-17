@@ -2,59 +2,84 @@ package com.invatech.pockit.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ---- Pockit brand palette: ink + soft pastels ----
-val Ink = Color(0xFF111111)
-val InkSoft = Color(0xFF1E1F22)
-val InkMuted = Color(0xFF8C8F96)
+// ---- Pockit Cozy Pastel Brand Palette ----
 
-val Cloud = Color(0xFFF4F4F1)       // app light background
-val CloudDeep = Color(0xFFE9E9E4)
+// Warm Cream Canvas
+val WarmCream = Color(0xFFFFFBEF)             // Main screen light canvas
+val WarmCreamSurface = Color(0xFFFAF4EA)      // Cards, sheets, and elevated elements
+val WarmCreamMuted = Color(0xFFF3ECE0)        // Subtle containers, chips, input backgrounds
+val WarmBorder = Color(0xFFEFE6DA)            // Soft warm border
+val WarmDivider = Color(0xFFE8DFD3)           // Divider hairlines
 
-val Mint = Color(0xFFCFEBE4)        // brand color
-val MintDeep = Color(0xFF7FD1BE)
+// Cocoa & Espresso Typography & Dark Accents
+val CocoaEspresso = Color(0xFF282A30)         // Primary text & dark accents
+val CocoaSoft = Color(0xFF4E413B)             // Secondary text
+val CocoaMuted = Color(0xFF93867F)            // Tertiary muted labels & timestamps
+val CocoaFab = Color(0xFF5E4B45)              // Floating action button cocoa
+val CocoaPill = Color(0xFF3F3530)             // Date chip pill background
 
-val Lavender = Color(0xFFE5D9F6)
-val LavenderDeep = Color(0xFFB9A2E8)
+// Backward-compatible aliases mapped to the warm brand palette
+val Ink = CocoaEspresso
+val InkSoft = CocoaSoft
+val InkMuted = CocoaMuted
+val Cloud = WarmCream
+val CloudDeep = WarmCreamMuted
 
-val Peach = Color(0xFFFBE2BF)
-val PeachDeep = Color(0xFFF5B971)
+// Category Pastel Card Tints (as seen in the design mockup)
+val PastelPeach = Color(0xFFFFE7D1)           // Food / Dining
+val PastelMint = Color(0xFFDCF5E8)            // Greens / Groceries / Health
+val PastelPink = Color(0xFFFFE3E8)            // Desserts / Sweets / Treats
+val PastelSky = Color(0xFFDEF1FE)             // Car / Transport / Travel
+val PastelApricot = Color(0xFFFFF0CE)         // Games / Leisure / Entertainment
+val PastelLilac = Color(0xFFF5E3F7)           // Cosmetics / Shopping / Beauty
+val PastelCyan = Color(0xFFDCF5F4)            // Sports / Fitness
+val PastelYellow = Color(0xFFFFF6D6)          // Bills / Utilities
 
-val Rose = Color(0xFFF9D6DD)
+// Brand pastel aliases
+val Mint = PockitTeal
+val MintDeep = Color(0xFF52B69A)
+val Lavender = PockitLavender
+val LavenderDeep = Color(0xFF9E86C8)
+val Peach = PastelPeach
+val PeachDeep = Color(0xFFEAA65D)
+val Rose = PastelPink
 
-val ErrorRed = Color(0xFFD64545)
-val ErrorSoft = Color(0xFFFBE1E1)
+// Organic decorative background shapes
+val BlobCoral = Color(0xFFF6A38E)
+val BlobTeal = Color(0xFF8CD4E2)
+val BlobHoney = Color(0xFFF7D58C)
 
 // Semantic Financial & Transaction Colors
 val IncomeGreen = Color(0xFF2E9B82)
-val IncomeGreenContainer = Color(0xFFE2F4EE)
-val ExpenseRedDark = Color(0xFFEF4444)
-val ExpenseRedContainer = Color(0xFFFEE2E2)
+val IncomeGreenContainer = Color(0xFFDCF5E8)
+val ExpenseRed = Color(0xFFD64545)
+val ExpenseRedDark = Color(0xFFD64545)
+val ExpenseRedContainer = Color(0xFFFFE3E8)
+val ErrorRed = Color(0xFFD64545)
+val ErrorSoft = Color(0xFFFFE3E8)
 val OwedColor = Color(0xFF2E9B82)
 
-// Consistent Skeleton / Shimmer Palette
-val ShimmerDarkBase = Color(0xFF26272B)
-val ShimmerDarkHighlight = Color(0xFF33353B)
-val ShimmerLightBase = Color(0xFFE5E7EB)
-val ShimmerLightHighlight = Color(0xFFF3F4F6)
+// Shimmer Palette for Skeleton Loaders
+val ShimmerLightBase = Color(0xFFEFE8DD)
+val ShimmerLightHighlight = Color(0xFFF9F5EE)
+val ShimmerDarkBase = ShimmerLightBase
+val ShimmerDarkHighlight = ShimmerLightHighlight
 
-// ---- Production Dark Mode Palette ----
-val DarkBackground = Color(0xFF0F1013)       // Deep matte black (battery-friendly, zero harsh glare)
-val DarkSurface = Color(0xFF191B20)          // Primary elevated cards, sheets, top bars
-val DarkSurfaceElevated = Color(0xFF22252C)  // Sub-cards, input textfields, chips
-val DarkSurfaceVariant = Color(0xFF2A2E36)   // Subtle contrast containers
-val DarkOutline = Color(0xFF333742)          // Modern crisp card border
-val DarkOutlineVariant = Color(0xFF23262D)   // Soft dividers
-
-val DarkTextPrimary = Color(0xFFF3F4F6)      // Crisp high-contrast text
-val DarkTextSecondary = Color(0xFF9CA3AF)    // Balanced readable muted text
-val DarkTextMuted = Color(0xFF6B7280)        // Subtle tertiary text
-
-// Radiant dark pastels for badges & highlights in dark mode
-val MintDark = Color(0xFF2EBFA5)
-val MintContainerDark = Color(0xFF143830)
-val LavenderDark = Color(0xFFA78BFA)
-val LavenderContainerDark = Color(0xFF2A2042)
-val PeachDark = Color(0xFFF59E0B)
-val PeachContainerDark = Color(0xFF3B2610)
-val RoseDark = Color(0xFFFB7185)
-val RoseContainerDark = Color(0xFF3B151F)
+// Deprecated dark aliases mapped to warm brand colors for clean compilation
+val DarkBackground = WarmCream
+val DarkSurface = WarmCreamSurface
+val DarkSurfaceElevated = WarmCreamMuted
+val DarkSurfaceVariant = WarmCreamMuted
+val DarkOutline = WarmBorder
+val DarkOutlineVariant = WarmDivider
+val DarkTextPrimary = CocoaEspresso
+val DarkTextSecondary = CocoaSoft
+val DarkTextMuted = CocoaMuted
+val MintDark = MintDeep
+val MintContainerDark = PastelMint
+val LavenderDark = LavenderDeep
+val LavenderContainerDark = PastelLilac
+val PeachDark = PeachDeep
+val PeachContainerDark = PastelPeach
+val RoseDark = Color(0xFFE26D82)
+val RoseContainerDark = PastelPink

@@ -110,3 +110,10 @@ If you have questions, suggestions, or concerns regarding this Privacy Policy or
 - **Developer / Organization:** InvaTech
 - **Email:** [YOUR_SUPPORT_EMAIL_HERE]
 - **Country:** India
+
+
+## Optional notification review and private planning
+
+When you enable notification access, Android makes notifications available to Pockit. Pockit checks the originating app against its supported UPI-app list before extracting payment details. You can disable each supported app or turn tracking off in Settings. Parsing happens on the device; raw notification text is not retained. Structured detected payment details sync to your Firebase account in a private review inbox and do not affect your wallet until approved. Approved wallet entries use the existing Firebase account sync.
+
+Name-only udhar records, savings goals, pocket-money plans, notification history/read state and user preferences sync to Firestore under your signed-in account. Local databases retain cached data and may hold payment drafts waiting for a connection. Unsynced changes can be lost if app data is cleared. Name-only records are not shared with the named friend. Device permissions and biometric enrollment stay device-specific. Reminder timing uses activity within Pockit, not activity in other apps. Financial notification text is not sent to advertising providers.

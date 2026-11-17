@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark Mode Base Application Theme -->
-    <style name="Theme.Pockit" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/pockit_ink</item>
+    <!-- Pockit Single Brand Theme (Dark Mode Disabled) -->
+    <style name="Theme.Pockit" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/pockit_cloud</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <!-- Dark Mode Splash Screen Theme -->
     <style name="Theme.Pockit.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/pockit_ink</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="windowSplashScreenBackground">@color/pockit_cloud</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="windowSplashScreenAnimationDuration">400</item>
         <item name="postSplashScreenTheme">@style/Theme.Pockit</item>
     </style>

@@ -1,51 +1,38 @@
 package com.invatech.pockit.data.ads
 
 import android.app.Activity
+import android.os.SystemClock
 import android.util.Log
-import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
 
-/**
- * Handles Google User Messaging Platform (UMP) consent flow.
- * Required by Google Play & AdMob policies for GDPR / European Economic Area (EEA) & UK compliance.
- */
+/** Refresh each launch, retry failures on foreground with a bounded cooldown. Never infer consent. */
 class ConsentManager(private val activity: Activity) {
-
-    private val consentInformation: ConsentInformation =
-        UserMessagingPlatform.getConsentInformation(activity)
+    private val information = UserMessagingPlatform.getConsentInformation(activity)
+    private var updating = false
+    private var completed = false
+    private var lastAttempt = -60_000L
 
     fun requestConsentAndInit(onConsentComplete: () -> Unit) {
-        val params = ConsentRequestParameters.Builder()
-            .setTagForUnderAgeOfConsent(false)
-            .build()
-
-        consentInformation.requestConsentInfoUpdate(
-            activity,
-            params,
-            {
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
-                    if (formError != null) {
-                        Log.w(TAG, "Consent form error: ${formError.message}")
-                    }
-                    // Initialize MobileAds once consent flow completes or falls back
-                    onConsentComplete()
-                }
-            },
-            { requestConsentError ->
-                Log.w(TAG, "Consent info update failed: ${requestConsentError.message}")
-                // Fallback: Always allow AdMob to initialize, especially for test ads and non-EEA environments
+        // Also propagates revoked consent to mounted ad slots.
+        onConsentComplete()
+        if (activity.isFinishing || activity.isDestroyed || updating || completed ||
+            SystemClock.elapsedRealtime() - lastAttempt < 60_000L) return
+        updating = true
+        lastAttempt = SystemClock.elapsedRealtime()
+        information.requestConsentInfoUpdate(activity, ConsentRequestParameters.Builder().build(), {
+            if (activity.isFinishing || activity.isDestroyed) { updating = false; return@requestConsentInfoUpdate }
+            onConsentComplete()
+            UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { error ->
+                updating = false
+                completed = error == null
+                error?.let { Log.w("ConsentManager", "Consent form: code=${it.errorCode}; ${it.message}") }
                 onConsentComplete()
             }
-        )
-
-        // Check if ads can already be requested from previously saved consent
-        if (consentInformation.canRequestAds()) {
+        }, { error ->
+            updating = false
+            Log.w("ConsentManager", "Consent update: code=${error.errorCode}; ${error.message}; canRequestAds=${information.canRequestAds()}")
             onConsentComplete()
-        }
-    }
-
-    companion object {
-        private const val TAG = "ConsentManager"
+        })
     }
 }

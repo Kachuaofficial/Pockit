@@ -29,40 +29,40 @@ enum class PockitPalette(val id: String, val title: String, val subtitle: String
 }
 
 /** The Material 3 colour scheme for this palette in the requested brightness. */
-fun PockitPalette.colorScheme(isDark: Boolean): ColorScheme = when (this) {
-    PockitPalette.POCKIT -> if (isDark) PockitDarkScheme else PockitLightScheme
-    PockitPalette.OCEAN -> if (isDark) OceanDarkScheme else OceanLightScheme
-    PockitPalette.SUNSET -> if (isDark) SunsetDarkScheme else SunsetLightScheme
-    PockitPalette.FOREST -> if (isDark) ForestDarkScheme else ForestLightScheme
-    PockitPalette.BERRY -> if (isDark) BerryDarkScheme else BerryLightScheme
-    PockitPalette.HONEY -> if (isDark) HoneyDarkScheme else HoneyLightScheme
+fun PockitPalette.colorScheme(isDark: Boolean = false): ColorScheme = when (this) {
+    PockitPalette.POCKIT -> PockitLightScheme
+    PockitPalette.OCEAN -> OceanLightScheme
+    PockitPalette.SUNSET -> SunsetLightScheme
+    PockitPalette.FOREST -> ForestLightScheme
+    PockitPalette.BERRY -> BerryLightScheme
+    PockitPalette.HONEY -> HoneyLightScheme
 }
 
 // ---------------------------------------------------------------------------------------------
-// Default Pockit palette (moved verbatim from Theme.kt, nothing changed)
+// Default Pockit warm brand palette
 // ---------------------------------------------------------------------------------------------
 
 private val PockitLightScheme = lightColorScheme(
-    primary = Ink,
+    primary = CocoaEspresso,
     onPrimary = Color.White,
-    primaryContainer = Mint,
-    onPrimaryContainer = Ink,
-    secondary = LavenderDeep,
-    onSecondary = Ink,
-    secondaryContainer = Lavender,
-    onSecondaryContainer = Ink,
-    tertiary = PeachDeep,
-    onTertiary = Ink,
-    tertiaryContainer = Peach,
-    onTertiaryContainer = Ink,
-    background = Cloud,
-    onBackground = Ink,
-    surface = Color.White,
-    onSurface = Ink,
-    surfaceVariant = CloudDeep,
-    onSurfaceVariant = InkMuted,
-    outline = Color(0xFFE5E7EB),
-    outlineVariant = Color(0xFFECECEC),
+    primaryContainer = PastelMint,
+    onPrimaryContainer = CocoaEspresso,
+    secondary = CocoaFab,
+    onSecondary = Color.White,
+    secondaryContainer = PastelPeach,
+    onSecondaryContainer = CocoaEspresso,
+    tertiary = CocoaSoft,
+    onTertiary = Color.White,
+    tertiaryContainer = PastelApricot,
+    onTertiaryContainer = CocoaEspresso,
+    background = WarmCream,
+    onBackground = CocoaEspresso,
+    surface = WarmCreamSurface,
+    onSurface = CocoaEspresso,
+    surfaceVariant = WarmCreamMuted,
+    onSurfaceVariant = CocoaMuted,
+    outline = WarmBorder,
+    outlineVariant = WarmDivider,
     error = ErrorRed,
     errorContainer = ErrorSoft,
     onErrorContainer = ErrorRed

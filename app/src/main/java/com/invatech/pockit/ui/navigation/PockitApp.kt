@@ -1,35 +1,37 @@
 package com.invatech.pockit.ui.navigation
 
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.*
+import com.invatech.pockit.ui.finance.*
+import com.invatech.pockit.ui.common.ads.LocalScreenAdSlots
+import com.invatech.pockit.ui.common.ads.rememberScreenAdSlots
+import com.invatech.pockit.ui.common.motion.LocalNavAnimatedVisibilityScope
+import com.invatech.pockit.ui.common.motion.LocalSharedTransitionScope
+import com.invatech.pockit.ui.common.motion.M3NavMotion
+import com.invatech.pockit.ui.common.motion.MotionSettings
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.invatech.pockit.ui.common.motion.M3Duration
-import com.invatech.pockit.ui.common.motion.M3Easing
+import com.invatech.pockit.ui.budget.BudgetScreen
 import com.invatech.pockit.ui.friends.FriendsScreen
 import com.invatech.pockit.ui.home.AllTransactionsScreen
 import com.invatech.pockit.ui.home.HomeScreen
@@ -42,180 +44,48 @@ import com.invatech.pockit.ui.space.SpaceViewModel
 import com.invatech.pockit.ui.space.addexpense.AddExpenseScreen
 import com.invatech.pockit.ui.space.detail.SpaceDetailScreen
 
-// ---------------------------------------------------------------------------
-// Navigation motion
-//
-// Instead of one fade+scale for everything, the motion now tells the user WHERE
-// they are going:
-//   - switching tabs      -> short horizontal slide in the direction of the tab + fade-through
-//   - opening a detail    -> new screen slides in, old one drifts back (parallax)
-//   - going back          -> detail slides away, old screen drifts back into place
-//   - add expense (modal) -> slides up, the screen beneath scales down for depth
-//
-// Everything is derived from the routes, so the same logic serves enter / exit /
-// popEnter / popExit.
-// ---------------------------------------------------------------------------
-
-private const val NavDuration = 400
-
-private enum class NavMotion {
-    TabForward, TabBackward, DrillIn, DrillOut, ModalIn, ModalOut
-}
-
-/** 0 = tab root, 1 = detail screen, 2 = modal-style screen on top of a detail. */
-private fun routeDepth(route: String?): Int = when {
-    route == null -> 0
-    route.endsWith("/add_expense") -> 2
-    route == "all_transactions" || route == "notifications" || route.startsWith("space_detail") -> 1
-    else -> 0
-}
-
-private fun tabIndexOf(route: String?): Int =
-    bottomBarScreens.toList().indexOfFirst { it.route == route }
-
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.currentMotion(): NavMotion {
-    val fromRoute = initialState.destination.route
-    val toRoute = targetState.destination.route
-    val from = routeDepth(fromRoute)
-    val to = routeDepth(toRoute)
-    return when {
-        to == 2 && from < 2 -> NavMotion.ModalIn
-        from == 2 && to < 2 -> NavMotion.ModalOut
-        to > from -> NavMotion.DrillIn
-        to < from -> NavMotion.DrillOut
-        tabIndexOf(toRoute) >= tabIndexOf(fromRoute) -> NavMotion.TabForward
-        else -> NavMotion.TabBackward
-    }
-}
-
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.pockitEnter(): EnterTransition =
-    when (currentMotion()) {
-        // Pattern 1: Lateral Transition (Moving forward/right across peer tabs)
-        NavMotion.TabForward ->
-            slideInHorizontally(tween(M3Duration.Medium4, easing = M3Easing.EmphasizedDecelerate)) {
-                (it * 0.12f).toInt()
-            } + scaleIn(
-                animationSpec = tween(M3Duration.Medium4, easing = M3Easing.EmphasizedDecelerate),
-                initialScale = 0.96f
-            ) + fadeIn(tween(M3Duration.Medium2, delayMillis = M3Duration.Short2, easing = LinearOutSlowInEasing))
-
-        // Pattern 1: Lateral Transition (Moving backward/left across peer tabs)
-        NavMotion.TabBackward ->
-            slideInHorizontally(tween(M3Duration.Medium4, easing = M3Easing.EmphasizedDecelerate)) {
-                -(it * 0.12f).toInt()
-            } + scaleIn(
-                animationSpec = tween(M3Duration.Medium4, easing = M3Easing.EmphasizedDecelerate),
-                initialScale = 0.96f
-            ) + fadeIn(tween(M3Duration.Medium2, delayMillis = M3Duration.Short2, easing = LinearOutSlowInEasing))
-
-        // Pattern 2: Forward Hierarchical Drill-In (Entering a detail screen from parent)
-        NavMotion.DrillIn ->
-            slideInHorizontally(tween(M3Duration.Long2, easing = M3Easing.EmphasizedDecelerate)) {
-                it
-            } + scaleIn(
-                animationSpec = tween(M3Duration.Long2, easing = M3Easing.EmphasizedDecelerate),
-                initialScale = 0.94f
-            ) + fadeIn(tween(M3Duration.Medium3, easing = LinearOutSlowInEasing))
-
-        // Pattern 2: Returning from Pop / Back Navigation
-        NavMotion.DrillOut ->
-            slideInHorizontally(tween(M3Duration.Medium4, easing = M3Easing.EmphasizedDecelerate)) {
-                -(it * 0.28f).toInt()
-            } + scaleIn(
-                animationSpec = tween(M3Duration.Medium4, easing = M3Easing.EmphasizedDecelerate),
-                initialScale = 0.94f
-            ) + fadeIn(tween(M3Duration.Medium2, easing = LinearOutSlowInEasing))
-
-        // Pattern 3: Modal Container Transform (Entering Add Expense modal)
-        NavMotion.ModalIn ->
-            slideInVertically(tween(M3Duration.Long2, easing = M3Easing.EmphasizedDecelerate)) {
-                (it * 0.35f).toInt()
-            } + scaleIn(
-                animationSpec = tween(M3Duration.Long2, easing = M3Easing.EmphasizedDecelerate),
-                initialScale = 0.92f
-            ) + fadeIn(tween(M3Duration.Medium3, easing = LinearOutSlowInEasing))
-
-        // Pattern 3: Returning from Modal Dismissal
-        NavMotion.ModalOut ->
-            scaleIn(
-                animationSpec = tween(M3Duration.Medium4, easing = M3Easing.EmphasizedDecelerate),
-                initialScale = 0.94f
-            ) + fadeIn(tween(M3Duration.Medium2, easing = LinearOutSlowInEasing))
-    }
-
-private fun AnimatedContentTransitionScope<NavBackStackEntry>.pockitExit(): ExitTransition =
-    when (currentMotion()) {
-        // Pattern 1: Lateral Transition Exit (Forward)
-        NavMotion.TabForward ->
-            slideOutHorizontally(tween(M3Duration.Medium1, easing = M3Easing.EmphasizedAccelerate)) {
-                -(it * 0.12f).toInt()
-            } + scaleOut(
-                animationSpec = tween(M3Duration.Medium1, easing = M3Easing.EmphasizedAccelerate),
-                targetScale = 0.96f
-            ) + fadeOut(tween(M3Duration.Short4))
-
-        // Pattern 1: Lateral Transition Exit (Backward)
-        NavMotion.TabBackward ->
-            slideOutHorizontally(tween(M3Duration.Medium1, easing = M3Easing.EmphasizedAccelerate)) {
-                (it * 0.12f).toInt()
-            } + scaleOut(
-                animationSpec = tween(M3Duration.Medium1, easing = M3Easing.EmphasizedAccelerate),
-                targetScale = 0.96f
-            ) + fadeOut(tween(M3Duration.Short4))
-
-        // Pattern 2: Parent view receding to background during drill-in
-        NavMotion.DrillIn ->
-            slideOutHorizontally(tween(M3Duration.Medium3, easing = M3Easing.EmphasizedAccelerate)) {
-                -(it * 0.28f).toInt()
-            } + scaleOut(
-                animationSpec = tween(M3Duration.Medium3, easing = M3Easing.EmphasizedAccelerate),
-                targetScale = 0.94f
-            ) + fadeOut(tween(M3Duration.Medium1, delayMillis = M3Duration.Short2))
-
-        // Pattern 2: Detail view exiting during pop / back (back swipe animation)
-        NavMotion.DrillOut ->
-            slideOutHorizontally(tween(M3Duration.Medium3, easing = M3Easing.EmphasizedAccelerate)) {
-                it
-            } + scaleOut(
-                animationSpec = tween(M3Duration.Medium3, easing = M3Easing.EmphasizedAccelerate),
-                targetScale = 0.94f
-            ) + fadeOut(tween(M3Duration.Medium1))
-
-        // Pattern 3: Background view receding beneath modal
-        NavMotion.ModalIn ->
-            scaleOut(
-                animationSpec = tween(M3Duration.Medium3, easing = M3Easing.EmphasizedAccelerate),
-                targetScale = 0.92f
-            ) + fadeOut(tween(M3Duration.Medium2, delayMillis = M3Duration.Short2))
-
-        // Pattern 3: Modal sliding down during dismissal
-        NavMotion.ModalOut ->
-            slideOutVertically(tween(M3Duration.Medium3, easing = M3Easing.EmphasizedAccelerate)) {
-                it
-            } + scaleOut(
-                animationSpec = tween(M3Duration.Medium3, easing = M3Easing.EmphasizedAccelerate),
-                targetScale = 0.92f
-            ) + fadeOut(tween(M3Duration.Medium1))
-    }
-
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun PockitApp(
     initialRoute: String? = null,
+    openAddExpense: Boolean = false,
     onRouteHandled: () -> Unit = {},
+    onAddExpenseHandled: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val animations by MotionSettings.enabled.collectAsState()
+    val onboardingPrefs = remember { context.getSharedPreferences("pockit_onboarding", 0) }
+    var onboarded by rememberSaveable { mutableStateOf(onboardingPrefs.getBoolean("liquid_v2", false)) }
+    if (!onboarded) {
+        OnboardingScreen { onboardingPrefs.edit().putBoolean("liquid_v2", true).apply(); onboarded = true }
+        return
+    }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val homeViewModel: HomeViewModel = viewModel()
-    val spaceViewModel: SpaceViewModel = viewModel()
-    val notificationViewModel: NotificationViewModel = viewModel()
+    val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+    var accountName by remember(uid) { mutableStateOf(com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.displayName ?: "there") }
+    DisposableEffect(uid) {
+        val profileListener = if (uid.isNotBlank()) com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(uid)
+            .addSnapshotListener { snapshot, _ -> snapshot?.getString("name")?.takeIf { it.isNotBlank() }?.let { accountName = it } } else null
+        val listener = if (uid.isNotBlank()) com.invatech.pockit.data.repository.AccountPreferences.bind(context, uid) else null
+        onDispose { listener?.remove(); profileListener?.remove() }
+    }
+    val homeViewModel: HomeViewModel = viewModel(key = "home_$uid")
+    val spaceViewModel: SpaceViewModel = viewModel(key = "space_$uid")
+    val notificationViewModel: NotificationViewModel = viewModel(key = "notifications_$uid")
     val unreadNotificationCount by notificationViewModel.unreadCount.collectAsState()
 
     // Handle deep link or notification intent route
     LaunchedEffect(initialRoute) {
         if (!initialRoute.isNullOrBlank()) {
-            navController.navigate(initialRoute) {
+            val safeRoute = when {
+                initialRoute in setOf("home", "friends", "space", "profile", "notifications", "all_transactions", "budgets", "upi_review", "goals", "planner") -> initialRoute
+                Regex("space_detail/[A-Za-z0-9_-]+").matches(initialRoute) -> initialRoute
+                else -> "home"
+            }
+            navController.navigate(safeRoute) {
                 launchSingleTop = true
             }
             onRouteHandled()
@@ -239,74 +109,179 @@ fun PockitApp(
             )
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = { pockitEnter() },
-            exitTransition = { pockitExit() },
-            popEnterTransition = { pockitEnter() },
-            popExitTransition = { pockitExit() }
-        ) {
-            composable(Screen.Home.route) {
-                HomeScreen(
-                    homeViewModel = homeViewModel,
-                    unreadNotificationCount = unreadNotificationCount,
-                    onNotificationClick = {
-                        navController.navigate("notifications")
-                    },
-                    onViewAllTransactions = {
-                        navController.navigate("all_transactions")
+        SharedTransitionLayout {
+            CompositionLocalProvider(
+                LocalSharedTransitionScope provides this
+            ) {
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.Home.route,
+                    modifier = Modifier.padding(innerPadding),
+                    enterTransition = { M3NavMotion.enter(animations) },
+                    exitTransition = { M3NavMotion.exit(animations) },
+                    popEnterTransition = { M3NavMotion.popEnter(animations) },
+                    popExitTransition = { M3NavMotion.popExit(animations) }
+                ) {
+                    composable(Screen.Home.route) {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            HomeScreen(
+                                homeViewModel = homeViewModel,
+                                userName = accountName,
+                                unreadNotificationCount = unreadNotificationCount,
+                                openAddSheetOnLaunch = openAddExpense,
+                                onAddSheetLaunched = onAddExpenseHandled,
+                                onNotificationClick = {
+                                    navController.navigate("notifications")
+                                },
+                                onViewAllTransactions = {
+                                    navController.navigate("all_transactions")
+                                },
+                                onSettings = { navController.navigate("profile") },
+                                onSpaces = { navController.navigate("space") },
+                                onGoals = { navController.navigate("goals") },
+                                onReview = { navController.navigate("upi_review") },
+                                onPlanner = { navController.navigate("planner") },
+                                onNavigateToBudgets = {
+                                    navController.navigate("budgets")
+                                }
+                            )
+                        }
                     }
-                )
-            }
-            composable("notifications") {
-                NotificationsScreen(
-                    viewModel = notificationViewModel,
-                    onBack = { navController.popBackStack() },
-                    onNavigateToSpace = { spaceId ->
-                        navController.navigate("space_detail/$spaceId")
+                    composable("notifications") {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            NotificationsScreen(
+                                viewModel = notificationViewModel,
+                                onBack = { navController.popBackStack() },
+                                onNavigateToSpace = { spaceId ->
+                                    navController.navigate("space_detail/$spaceId")
+                                }
+                            )
+                        }
                     }
-                )
-            }
-            composable("all_transactions") {
-                AllTransactionsScreen(
-                    homeViewModel = homeViewModel,
-                    onBack = { navController.popBackStack() }
-                )
-            }
-            composable(Screen.Friends.route) {
-                FriendsScreen()
-            }
-            composable(Screen.Space.route) {
-                SpaceScreen(
-                    viewModel = spaceViewModel,
-                    onOpenSpace = { spaceId ->
-                        navController.navigate("space_detail/$spaceId")
+                    composable("all_transactions") {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            AllTransactionsScreen(
+                                homeViewModel = homeViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
                     }
-                )
-            }
-            composable("space_detail/{spaceId}") { backStackEntry ->
-                val spaceId = backStackEntry.arguments?.getString("spaceId") ?: return@composable
-                SpaceDetailScreen(
-                    spaceId = spaceId,
-                    viewModel = spaceViewModel,
-                    onBack = { navController.popBackStack() },
-                    onAddExpense = {
-                        navController.navigate("space_detail/$spaceId/add_expense")
+                    composable("upi_review") {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            UpiReviewScreen(onBack = { navController.popBackStack() })
+                        }
                     }
-                )
-            }
-            composable("space_detail/{spaceId}/add_expense") { backStackEntry ->
-                val spaceId = backStackEntry.arguments?.getString("spaceId") ?: return@composable
-                AddExpenseScreen(
-                    spaceId = spaceId,
-                    viewModel = spaceViewModel,
-                    onBack = { navController.popBackStack() }
-                )
-            }
-            composable(Screen.Profile.route) {
-                ProfileScreen(onSignOut = onSignOut)
+                    composable("goals") {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            GoalsScreen(onBack = { navController.popBackStack() })
+                        }
+                    }
+                    composable("planner") {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            val wallet by homeViewModel.uiState.collectAsState()
+                            PlannerScreen(wallet.balancePaise, onBack = { navController.popBackStack() })
+                        }
+                    }
+                    composable("connected_friends") {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            com.invatech.pockit.ui.friends.ConnectedFriendsContent()
+                        }
+                    }
+                    composable("budgets") {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            BudgetScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                    }
+                    composable(Screen.Friends.route) {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            FriendsScreen()
+                        }
+                    }
+                    composable(Screen.Space.route) {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            SpaceScreen(
+                                viewModel = spaceViewModel,
+                                onOpenSpace = { spaceId ->
+                                    navController.navigate("space_detail/$spaceId")
+                                }
+                            )
+                        }
+                    }
+                    composable("space_detail/{spaceId}") { backStackEntry ->
+                        val spaceId = backStackEntry.arguments?.getString("spaceId") ?: return@composable
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            SpaceDetailScreen(
+                                spaceId = spaceId,
+                                viewModel = spaceViewModel,
+                                onBack = { navController.popBackStack() },
+                                onAddExpense = {
+                                    navController.navigate("space_detail/$spaceId/add_expense")
+                                }
+                            )
+                        }
+                    }
+                    composable("space_detail/{spaceId}/add_expense") { backStackEntry ->
+                        val spaceId = backStackEntry.arguments?.getString("spaceId") ?: return@composable
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            AddExpenseScreen(
+                                spaceId = spaceId,
+                                viewModel = spaceViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                    }
+                    composable(Screen.Profile.route) {
+                        CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this@composable, LocalScreenAdSlots provides rememberScreenAdSlots()) {
+                            androidx.activity.compose.BackHandler(enabled = navController.previousBackStackEntry != null) {
+                                navController.popBackStack()
+                            }
+                            ProfileScreen(
+                                onSignOut = onSignOut,
+                                onNavigateToBudgets = {
+                                    navController.navigate("budgets")
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
     }

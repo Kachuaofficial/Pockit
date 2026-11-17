@@ -1,34 +1,58 @@
 package com.invatech.pockit.ui.auth
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CloudDone
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Group
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.PieChart
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,365 +60,359 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.invatech.pockit.R
 import com.invatech.pockit.data.auth.GoogleAuthClient
 import com.invatech.pockit.ui.common.legal.LegalBottomSheet
 import com.invatech.pockit.ui.common.legal.LegalDocType
-import com.invatech.pockit.ui.common.loading.ExpressiveLoadingIndicator
-import com.invatech.pockit.ui.theme.Ink
-import com.invatech.pockit.ui.theme.InkMuted
-import com.invatech.pockit.ui.theme.Lavender
-import com.invatech.pockit.ui.theme.LavenderDeep
-import com.invatech.pockit.ui.theme.Mint
-import com.invatech.pockit.ui.theme.MintDeep
-import com.invatech.pockit.ui.theme.Peach
+import com.invatech.pockit.ui.common.motion.MotionSettings
+import com.invatech.pockit.ui.theme.CocoaEspresso
+import com.invatech.pockit.ui.theme.CocoaSoft
+import com.invatech.pockit.ui.theme.PastelLilac
+import com.invatech.pockit.ui.theme.PastelMint
+import com.invatech.pockit.ui.theme.PastelPeach
+import com.invatech.pockit.ui.theme.PastelSky
+import com.invatech.pockit.ui.theme.PockitCharcoal
+import com.invatech.pockit.ui.theme.PockitCoral
+import com.invatech.pockit.ui.theme.WarmCream
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(
-    viewModel: AuthViewModel,
-    onLoginSuccess: () -> Unit
+fun LoginScreen(viewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
+    val context = LocalContext.current
+    val client = remember(context) { GoogleAuthClient(context) }
+    val scope = rememberCoroutineScope()
+    val state by viewModel.uiState.collectAsState()
+    var picking by remember { mutableStateOf(false) }
+    var pickerError by remember { mutableStateOf<String?>(null) }
+    var legal by remember { mutableStateOf<LegalDocType?>(null) }
+
+    LoginContent(
+        loading = state.isLoading || picking,
+        error = pickerError ?: state.errorMessage,
+        onSignIn = {
+            if (!picking && !state.isLoading) {
+                scope.launch {
+                    picking = true
+                    pickerError = null
+                    viewModel.clearError()
+                    try {
+                        viewModel.signInWithGoogleToken(client.signIn())
+                    } catch (_: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                        // User cancelled Google selection sheet - silent ignore
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (exception: Exception) {
+                        // Log only the exception type; provider messages can contain account identifiers.
+                        android.util.Log.w("GoogleAuth", "Credential request failed: " + exception.javaClass.simpleName)
+                        pickerError = com.invatech.pockit.data.auth.googleSignInErrorMessage(exception)
+                    } finally {
+                        picking = false
+                    }
+                }
+            }
+        },
+        onTerms = { legal = LegalDocType.TERMS_OF_SERVICE },
+        onPrivacy = { legal = LegalDocType.PRIVACY_POLICY }
+    )
+
+    legal?.let { LegalBottomSheet(initialDocType = it, onDismiss = { legal = null }) }
+
+    LaunchedEffect(state.isSignedIn) {
+        if (state.isSignedIn) onLoginSuccess()
+    }
+}
+
+@Composable
+internal fun LoginContent(
+    loading: Boolean,
+    error: String?,
+    onSignIn: () -> Unit,
+    onTerms: () -> Unit,
+    onPrivacy: () -> Unit
 ) {
     val context = LocalContext.current
-    val googleAuthClient = remember(context) {
-        GoogleAuthClient(context)
+    val appIcon = remember(context) {
+        runCatching { ContextCompat.getDrawable(context, R.mipmap.ic_launcher)?.toBitmap(120, 120)?.asImageBitmap() }.getOrNull()
     }
-    val scope = rememberCoroutineScope()
-    val uiState by viewModel.uiState.collectAsState()
+    BoxWithConstraints(Modifier.fillMaxSize().background(WarmCream).safeDrawingPadding()) {
+        val compact = maxHeight < 700.dp
+        Column(Modifier.fillMaxSize().padding(horizontal = 28.dp).padding(top = if (compact) 16.dp else 28.dp, bottom = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (appIcon != null) Image(appIcon, null, Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)))
+                else Icon(Icons.Rounded.AccountBalanceWallet, null, Modifier.size(32.dp), tint = PockitCharcoal)
+                Text("pockit", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp, color = PockitCharcoal)
+            }
+            Spacer(Modifier.height(if (compact) 24.dp else 40.dp))
+            Text("Money sorted.\nLife, a little lighter.", fontSize = if (compact) 32.sp else 40.sp,
+                lineHeight = if (compact) 37.sp else 45.sp, letterSpacing = (-1.5).sp,
+                fontWeight = FontWeight.ExtraBold, color = PockitCharcoal)
+            Spacer(Modifier.height(12.dp))
+            Text("Track your spending, split with friends,\nand make room for your next big plan.",
+                style = MaterialTheme.typography.bodyMedium, color = CocoaSoft)
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                if (maxHeight >= 70.dp) {
+                    val artworkScale = (maxHeight.value / 285f).coerceAtMost(1f)
+                    Box(Modifier.fillMaxWidth().requiredHeight(255.dp).graphicsLayer {
+                        scaleX = artworkScale; scaleY = artworkScale
+                    }) { LoginArtwork() }
+                }
+            }
+            Text("YOUR EVERYDAY MONEY, IN ONE PLACE", style = MaterialTheme.typography.labelSmall,
+                letterSpacing = 1.sp, color = CocoaSoft)
+            Spacer(Modifier.height(14.dp))
+            Button(onClick = onSignIn, enabled = !loading,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PockitCharcoal, contentColor = WarmCream,
+                    disabledContainerColor = PockitCharcoal.copy(alpha = .8f), disabledContentColor = WarmCream),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp)) {
+                if (loading) CircularProgressIndicator(Modifier.size(20.dp), color = WarmCream, strokeWidth = 2.dp)
+                else Surface(color = Color.White, shape = CircleShape) {
+                    Icon(painterResource(R.drawable.ic_google_logo), null, Modifier.padding(5.dp).size(20.dp), tint = Color.Unspecified)
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(if (loading) "Signing in…" else "Continue with Google", style = MaterialTheme.typography.titleSmall)
+            }
+            if (error != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
+            Spacer(Modifier.height(10.dp))
+            Text("Sign in to sync your records across devices.", style = MaterialTheme.typography.bodySmall,
+                color = CocoaSoft, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onTerms) { Text("Terms", color = CocoaSoft) }
+                Text("·", color = CocoaSoft)
+                TextButton(onClick = onPrivacy) { Text("Privacy Policy", color = CocoaSoft) }
+            }
+        }
+    }
+}
 
-    var appeared by remember { mutableStateOf(false) }
-    var showLegalSheet by remember { mutableStateOf(false) }
-    var legalDocType by remember { mutableStateOf(LegalDocType.TERMS_OF_SERVICE) }
-    LaunchedEffect(Unit) { appeared = true }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+@Composable
+private fun AuthFeaturePill(
+    icon: ImageVector,
+    label: String,
+    bgColor: Color,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = bgColor,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.15f))
     ) {
-        // ---------- Hero ----------
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 0.dp)
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            HeroCard(appeared = appeared)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(15.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = CocoaEspresso,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoginArtwork() {
+    val motion by MotionSettings.enabled.collectAsState()
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    val active = motion && lifecycle.isAtLeast(Lifecycle.State.STARTED)
+    val drift = if (active) {
+        rememberInfiniteTransition(label = "login_float").animateFloat(
+            initialValue = -1f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(4500, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "login_drift"
+        )
+    } else rememberUpdatedState(0f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(255.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Decorative warm ambient shapes
+        Canvas(Modifier.matchParentSize()) {
+            drawCircle(
+                color = PastelPeach.copy(alpha = 0.55f),
+                radius = size.minDimension * 0.44f,
+                center = Offset(size.width * 0.20f, size.height * 0.42f)
+            )
+            drawCircle(
+                color = PastelMint.copy(alpha = 0.55f),
+                radius = size.minDimension * 0.38f,
+                center = Offset(size.width * 0.82f, size.height * 0.32f)
+            )
         }
 
-        // ---------- Bottom sheet ----------
-        AnimatedVisibility(
-            visible = appeared,
-            enter = fadeIn(tween(500)) + slideInVertically(tween(600)) { it / 3 }
+        // Main Financial Overview Hero Card
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .graphicsLayer {
+                    rotationZ = -3.5f + (drift.value * 1.2f)
+                    translationY = drift.value * 6.dp.toPx()
+                }
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    spotColor = Color(0x28000000),
+                    ambientColor = Color(0x12000000)
+                ),
+            color = Color(0xFF235A4F), // Deep Emerald Teal
+            shape = RoundedCornerShape(28.dp)
         ) {
-            Surface(
-                color = Ink,
-                shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 20.dp)
+            Column(
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .navigationBarsPadding()
-                        .padding(horizontal = 28.dp, vertical = 32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Your money,\nbeautifully simple.",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
+                        text = "MONTHLY PLAN",
+                        color = Color(0xFFC8E5D8),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp
                     )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = "Track spending, set goals and see where every rupee goes.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = InkMuted,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    if (uiState.isLoading) {
+                    Row(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Color(0xFF163E36))
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(58.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                ExpressiveLoadingIndicator(
-                                    size = 32.dp,
-                                    customColor = MintDeep,
-                                    showHalo = true
-                                )
-                                Text(
-                                    text = "Signing in...",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    viewModel.clearError()
-
-                                    try {
-                                        val idToken = googleAuthClient.signIn()
-                                        viewModel.signInWithGoogleToken(idToken)
-                                    } catch (exception: Exception) {
-                                        // Account picker cancellation or sign-in error
-                                        viewModel.clearError()
-                                    }
-                                }
-                            },
-                            shape = CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Mint,
-                                contentColor = Ink
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(58.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "G",
-                                    color = Ink,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                            }
-                            Spacer(modifier = Modifier.size(12.dp))
-                            Text(
-                                text = "Continue with Google",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                    }
-
-                    uiState.errorMessage?.let { message ->
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text(
-                                text = message,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.labelMedium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "By continuing you agree to our ",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = InkMuted
-                            )
-                            Text(
-                                text = "Terms",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    textDecoration = TextDecoration.Underline
-                                ),
-                                color = Mint,
-                                modifier = Modifier.clickable {
-                                    legalDocType = LegalDocType.TERMS_OF_SERVICE
-                                    showLegalSheet = true
-                                }
-                            )
-                            Text(
-                                text = " & ",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = InkMuted
-                            )
-                            Text(
-                                text = "Privacy Policy",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    textDecoration = TextDecoration.Underline
-                                ),
-                                color = Mint,
-                                modifier = Modifier.clickable {
-                                    legalDocType = LegalDocType.PRIVACY_POLICY
-                                    showLegalSheet = true
-                                }
-                            )
-                        }
-
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF55D399))
+                        )
                         Text(
-                            text = "© 2026 Pockit Technologies Inc.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = InkMuted.copy(alpha = 0.6f),
-                            textAlign = TextAlign.Center
+                            text = "On track",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFE6F5EE)
+                        )
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        text = "₹24,850",
+                        color = Color(0xFFFFFBEF),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-1).sp
+                    )
+                    Text(
+                        text = "Safe to spend · 8 days remaining",
+                        color = Color(0xFFBFDCD0),
+                        fontSize = 12.5.sp
+                    )
+                }
+
+                // Mini progress spending bars
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.Bottom,
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    val barHeights = listOf(16, 26, 20, 34, 28, 36, 30)
+                    barHeights.forEachIndexed { i, h ->
+                        val isLast = i == barHeights.lastIndex
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(h.dp)
+                                .background(
+                                    if (isLast) Color(0xFFFFB672) else Color(0xFF6AC5AC).copy(alpha = 0.85f),
+                                    RoundedCornerShape(4.dp)
+                                )
                         )
                     }
                 }
             }
         }
-    }
 
-    if (showLegalSheet) {
-        LegalBottomSheet(
-            initialDocType = legalDocType,
-            onDismiss = { showLegalSheet = false }
-        )
-    }
-
-    LaunchedEffect(uiState.isSignedIn) {
-        if (uiState.isSignedIn) {
-            onLoginSuccess()
-        }
-    }
-}
-
-@Composable
-private fun HeroCard(appeared: Boolean) {
-    Surface(
-        color = Mint,
-        shape = RoundedCornerShape(36.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-
-            // Brand row
-            Row(
-                modifier = Modifier.align(Alignment.TopStart),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(Ink),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "P",
-                        color = Mint,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+        // Floating Micro Toast Card on top right
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 10.dp, bottom = 4.dp)
+                .graphicsLayer {
+                    rotationZ = 4f
+                    translationY = drift.value * -5.dp.toPx()
                 }
-                Spacer(modifier = Modifier.size(10.dp))
+                .shadow(
+                    elevation = 8.dp,
+                    shape = RoundedCornerShape(18.dp),
+                    spotColor = Color(0x30000000)
+                ),
+            color = PastelLilac,
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(1.dp, Color(0xFFE4CCE8))
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = Color(0xFF6B4C85)
+                )
                 Text(
-                    text = "POCKIT",
-                    color = Ink,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "Chai with team · ₹40 split",
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 3.sp
+                    color = Color(0xFF38234B)
                 )
             }
-
-            // Floating chips
-            Chip(
-                text = "+ 6.2%",
-                background = Lavender,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(y = 4.dp)
-            )
-            Chip(
-                text = "₹ 12,788",
-                background = Peach,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(y = (-6).dp)
-            )
-
-            // Mini bar chart
-            MiniBars(
-                appeared = appeared,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(150.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun Chip(text: String, background: Color, modifier: Modifier = Modifier) {
-    Surface(
-        color = background,
-        shape = CircleShape,
-        shadowElevation = 2.dp,
-        modifier = modifier
-    ) {
-        Text(
-            text = text,
-            color = Ink,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp)
-        )
-    }
-}
-
-@Composable
-private fun MiniBars(appeared: Boolean, modifier: Modifier = Modifier) {
-    val targets = listOf(0.4f, 0.65f, 0.5f, 0.95f, 0.6f, 0.8f, 0.55f)
-    val colors = listOf(Ink, Ink, LavenderDeep, Ink, Ink, MintDeep, Ink)
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        targets.forEachIndexed { index, target ->
-            val fraction by animateFloatAsState(
-                targetValue = if (appeared) target else 0.05f,
-                animationSpec = tween(durationMillis = 700, delayMillis = index * 90),
-                label = "bar$index"
-            )
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(fraction)
-                    .clip(RoundedCornerShape(50))
-                    .background(colors[index])
-            )
         }
     }
 }

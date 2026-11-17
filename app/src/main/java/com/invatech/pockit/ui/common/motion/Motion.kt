@@ -1,22 +1,32 @@
 package com.invatech.pockit.ui.common.motion
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 
 /**
  * Material Design 3 Expressive Motion System
@@ -203,3 +213,72 @@ fun rememberPressScale(
     interactionSource: InteractionSource,
     pressedScale: Float = 0.94f
 ): State<Float> = rememberExpressivePressScale(interactionSource, pressedScale)
+
+/**
+ * Universal tactile bouncy clickable modifier with M3 Expressive spring physics.
+ */
+fun Modifier.expressiveBounceClickable(
+    interactionSource: MutableInteractionSource? = null,
+    pressedScale: Float = 0.94f,
+    onClick: () -> Unit
+): Modifier = composed {
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    val isPressed by source.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) pressedScale else 1f,
+        animationSpec = M3Spring.touchFeedback(),
+        label = "expressive_bounce_click_scale"
+    )
+    this
+        .scale(scale)
+        .clickable(
+            interactionSource = source,
+            indication = null,
+            onClick = onClick
+        )
+}
+
+/**
+ * Subtle kawaii floating motion for mascots, badges, and thought bubbles.
+ */
+fun Modifier.kawaiiFloating(
+    durationMillis: Int = 2200,
+    floatDistance: Float = 3.5f
+): Modifier = composed {
+    val enabled by MotionSettings.enabled.collectAsState()
+    if (!enabled) return@composed this
+    val infiniteTransition = rememberInfiniteTransition(label = "kawaii_float")
+    val dy by infiniteTransition.animateFloat(
+        initialValue = -floatDistance,
+        targetValue = floatDistance,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis, easing = CubicBezierEasing(0.45f, 0f, 0.55f, 1f)),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dy"
+    )
+    this.graphicsLayer {
+        translationY = dy
+    }
+}
+
+/**
+ * Smooth numeric count-up animation helper with spring physics.
+ */
+@Composable
+fun rememberCountUpAmount(
+    target: Double,
+    animateFromZero: Boolean = true
+): State<Float> {
+    val anim = remember { Animatable(if (animateFromZero) 0f else target.toFloat()) }
+    LaunchedEffect(target) {
+        anim.animateTo(
+            targetValue = target.toFloat(),
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioLowBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        )
+    }
+    return anim.asState()
+}

@@ -14,6 +14,70 @@
       },
       "oauth_client": [
         {
+          "client_id": "1023878468744-63l30op5cfjf2dbs97fka3cai13khdef.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invatech.pockit",
+            "certificate_hash": "6e1283276059da6dae36579d92867554807c35cf"
+          }
+        },
+        {
+          "client_id": "1023878468744-6oe9shqmcme3aee7rfelkdchnqaink2v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invatech.pockit",
+            "certificate_hash": "f06e92076e97f9289591068a49e1aacef030919b"
+          }
+        },
+        {
+          "client_id": "1023878468744-b6ltaitj0irvcfjpl58bjb94hkftgnfl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invatech.pockit",
+            "certificate_hash": "ca35f8b6ecd1df055c6bfea05c0b533fb2584941"
+          }
+        },
+        {
+          "client_id": "1023878468744-inve16o67erm8589h4r4nf0bvsc2oddd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invatech.pockit",
+            "certificate_hash": "bc2f9fb3fc866b5f89416992b107dd765c2cdbbf"
+          }
+        },
+        {
+          "client_id": "1023878468744-lk49b0oa3krt11djt0r5jfo6hh1smsg8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invatech.pockit",
+            "certificate_hash": "b0357b4e3a9a0301fe7aebffac064cabce27f753"
+          }
+        },
+        {
+          "client_id": "1023878468744-m1bi07c54cakbqcbe01e570s4n6ckpsg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invatech.pockit",
+            "certificate_hash": "87cbb164a541d5a167b399102cfd1e9798693131"
+          }
+        },
+        {
+          "client_id": "1023878468744-mc1pog35kbhqmg6obb7qg5ccvf951nre.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invatech.pockit",
+            "certificate_hash": "8bb36374675599e6be6ec6afbcd365c4a4b6fc8f"
+          }
+        },
+        {
+          "client_id": "1023878468744-vb7b54bf69gqmv3t3a1j4in3dqd42us9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invatech.pockit",
+            "certificate_hash": "9da387ea3b4afb849d659cc096e727c5d88815b7"
+          }
+        },
+        {
           "client_id": "1023878468744-8ta6agnuo7gjotaa15bvbmv6ss4ten6l.apps.googleusercontent.com",
           "client_type": 3
         }

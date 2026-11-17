@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -105,7 +106,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invatech.pockit.data.local.entity.NotificationEntity
-import com.invatech.pockit.ui.common.ads.PockitBannerAd
 import com.invatech.pockit.ui.common.motion.M3Spring
 import com.invatech.pockit.ui.common.swipe.SwipeToDeleteContainer
 import com.invatech.pockit.ui.space.components.PockitTopBar
@@ -139,7 +139,7 @@ private const val CONTENT_TYPE_ENTRY = "entry"
 private const val CONTENT_TYPE_AD = "ad"
 private const val RELATIVE_TIME_TICK_MS = 60_000L
 
-private val CardShape = RoundedCornerShape(22.dp)
+private val CardShape = RoundedCornerShape(28.dp)
 
 private enum class ScreenContent { LOADING, ERROR, EMPTY, CONTENT }
 
@@ -228,6 +228,20 @@ fun NotificationsScreen(
                     }
                 }
             )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+                color = com.invatech.pockit.ui.theme.PockitLavender,
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Your updates", style = MaterialTheme.typography.headlineSmall,
+                        color = colors.onSurface)
+                    Text(if (uiState.unreadCount > 0) "${uiState.unreadCount} unread · Stay on top of shared expenses."
+                        else "You're all caught up on unread updates.",
+                        style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+                }
+            }
 
             NotificationFilterRow(
                 selected = uiState.selectedFilter,
@@ -369,16 +383,16 @@ private fun NotificationsList(
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        items(
+        itemsIndexed(
             items = listItems,
-            key = { it.key },
-            contentType = {
+            key = { _, item -> item.key },
+            contentType = { _, it ->
                 when (it) {
                     is NotificationListItem.Header -> CONTENT_TYPE_HEADER
                     is NotificationListItem.Entry -> CONTENT_TYPE_ENTRY
                 }
             }
-        ) { listItem ->
+        ) { index, listItem ->
             when (listItem) {
                 is NotificationListItem.Header -> NotificationSectionHeader(
                     label = listItem.section.label,
@@ -386,25 +400,25 @@ private fun NotificationsList(
                 )
                 is NotificationListItem.Entry -> {
                     val notification = listItem.notification
-                    SwipeToDeleteContainer(
-                        itemKey = notification.id,
-                        shape = CardShape,
-                        requireConfirmation = false,
-                        onDelete = { onItemDelete(notification.id) },
-                        modifier = Modifier.animateItem()
-                    ) {
-                        NotificationCardItem(
-                            item = notification,
-                            onClick = { onItemClick(notification) },
-                            nowMillis = now.value
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SwipeToDeleteContainer(
+                            itemKey = notification.id,
+                            shape = CardShape,
+                            requireConfirmation = false,
+                            onDelete = { onItemDelete(notification.id) },
+                            modifier = Modifier.animateItem()
+                        ) {
+                            NotificationCardItem(
+                                item = notification,
+                                onClick = { onItemClick(notification) },
+                                nowMillis = now.value
+                            )
+                        }
+
+
                     }
                 }
             }
-        }
-
-        item(key = "banner_ad", contentType = CONTENT_TYPE_AD) {
-            PockitBannerAd(modifier = Modifier.padding(top = 8.dp))
         }
     }
 }
@@ -448,7 +462,7 @@ fun NotificationCardItem(
         colors.surfaceVariant.copy(alpha = 0.5f).compositeOver(colors.background)
     }
     val containerColor by animateColorAsState(
-        targetValue = if (unread) colors.surface else readContainer,
+        targetValue = if (unread) com.invatech.pockit.ui.theme.PockitTeal else colors.surface,
         animationSpec = M3Spring.fastEffects(),
         label = "card_container"
     )
@@ -948,13 +962,13 @@ private fun NotificationStateMessage(
         ) {
             Box(
                 modifier = Modifier
-                    .size(88.dp)
+                    .size(72.dp)
                     .graphicsLayer {
                         scaleX = iconScale
                         scaleY = iconScale
                     }
-                    .clip(CircleShape)
-                    .background(containerColor),
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(com.invatech.pockit.ui.theme.PockitLavender),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

@@ -1,5 +1,7 @@
 package com.invatech.pockit.ui.home.components
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -28,6 +30,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,15 +43,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.invatech.pockit.data.ml.ReceiptScannerManager
 import com.invatech.pockit.ui.common.loading.ExpressiveLoadingIndicator
+import kotlinx.coroutines.launch
 import com.invatech.pockit.ui.home.model.Category
 import com.invatech.pockit.ui.home.model.WalletTransactionType
 import com.invatech.pockit.ui.space.components.AmountCard
@@ -64,25 +72,65 @@ import com.invatech.pockit.ui.theme.Peach
 @Composable
 fun AddWalletTransactionSheet(
     initialType: WalletTransactionType = WalletTransactionType.EXPENSE,
+    initialTitle: String = "",
+    initialAmountPaise: Long? = null,
+    initialCategory: Category? = null,
+    isEditing: Boolean = false,
     isLoading: Boolean = false,
+    canSave: Boolean = true,
     errorMessage: String? = null,
     onDismiss: () -> Unit,
     onSave: (title: String, amountPaise: Long, type: WalletTransactionType, category: String) -> Unit
 ) {
-    var selectedType by remember { mutableStateOf(initialType) }
-    var title by remember { mutableStateOf("") }
-    var amountText by remember { mutableStateOf("") }
-    var selectedCategory by remember {
-        mutableStateOf(if (initialType == WalletTransactionType.INCOME) Category.Salary else Category.Food)
+    var selectedType by remember(initialType) { mutableStateOf(initialType) }
+    var title by remember(initialTitle) { mutableStateOf(initialTitle) }
+    var amountText by remember(initialAmountPaise) {
+        mutableStateOf(
+            if (initialAmountPaise != null && initialAmountPaise > 0L) {
+                com.invatech.pockit.domain.Money.decimal(initialAmountPaise)
+            } else ""
+        )
+    }
+    var selectedCategory by remember(initialCategory, initialType) {
+        mutableStateOf(
+            initialCategory ?: if (initialType == WalletTransactionType.INCOME) Category.Salary else Category.Food
+        )
     }
 
-    val amountPaise = runCatching {
-        amountText.toBigDecimal()
-            .movePointRight(2)
-            .longValueExact()
-    }.getOrNull() ?: 0L
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isScanning by remember { mutableStateOf(false) }
 
-    val isValid = title.isNotBlank() && amountPaise > 0L && !isLoading
+    val receiptLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                isScanning = true
+                val result = ReceiptScannerManager.scanReceipt(context, uri).getOrNull()
+                isScanning = false
+                if (result != null) {
+                    result.amount?.let { amt ->
+                        amountText = if (amt % 1.0 == 0.0) {
+                            amt.toLong().toString()
+                        } else {
+                            String.format(java.util.Locale.ROOT, "%.2f", amt)
+                        }
+                    }
+                    result.merchantName?.let { name ->
+                        title = name
+                    }
+                    result.category?.let { cat ->
+                        selectedCategory = cat
+                    }
+                }
+            }
+        }
+    }
+
+    val amountPaise = com.invatech.pockit.domain.Money.parse(amountText) ?: 0L
+
+    val isValid = title.isNotBlank() && amountPaise > 0L && !isLoading && canSave
 
     ModalBottomSheet(
         onDismissRequest = { if (!isLoading) onDismiss() },
@@ -107,7 +155,12 @@ fun AddWalletTransactionSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = if (selectedType == WalletTransactionType.EXPENSE) "Add Expense" else "Add Income",
+                    text = when {
+                        isEditing && selectedType == WalletTransactionType.EXPENSE -> "Edit Expense"
+                        isEditing -> "Edit Income"
+                        selectedType == WalletTransactionType.EXPENSE -> "Add Expense"
+                        else -> "Add Income"
+                    },
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -139,6 +192,57 @@ fun AddWalletTransactionSheet(
                                 selectedCategory = Category.Salary
                             }
                         )
+                    }
+                }
+            }
+
+            // Google ML Kit Smart Bill / Receipt Scanner Pill
+            if (selectedType == WalletTransactionType.EXPENSE) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(enabled = !isScanning) {
+                            receiptLauncher.launch("image/*")
+                        },
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isScanning) {
+                                ExpressiveLoadingIndicator(modifier = Modifier.size(18.dp))
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Rounded.DocumentScanner,
+                                    contentDescription = "Scan Receipt with ML Kit",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isScanning) "Reading receipt with ML Kit..." else "Scan Bill or Receipt (AI OCR)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Auto-extracts bill total, store name & category",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -232,9 +336,13 @@ fun AddWalletTransactionSheet(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Primary Save Button
+            // Primary Save / Update Button
             PockitPrimaryButton(
-                text = if (selectedType == WalletTransactionType.EXPENSE) "Save expense" else "Save income",
+                text = when {
+                    isEditing -> "Update Record"
+                    selectedType == WalletTransactionType.EXPENSE -> "Save expense"
+                    else -> "Save income"
+                },
                 enabled = isValid,
                 onClick = {
                     onSave(

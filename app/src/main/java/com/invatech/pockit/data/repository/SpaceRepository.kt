@@ -32,9 +32,7 @@ class SpaceRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    private val localDao: SpaceDao? by lazy {
-        runCatching { PockitApplication.instance.database.spaceDao() }.getOrNull()
-    }
+    private val localDao: SpaceDao? = runCatching { PockitApplication.instance.database.spaceDao() }.getOrNull()
     val currentUserId: String
         get() = auth.currentUser?.uid ?: "me"
 
@@ -243,6 +241,10 @@ class SpaceRepository(
         paidById: String,
         shares: Map<String, Double>
     ) {
+        val amountPaise = com.invatech.pockit.domain.Money.parse(java.math.BigDecimal.valueOf(amount).toPlainString()) ?: error("Enter an amount with at most two decimal places.")
+        require(amountPaise in 1..com.invatech.pockit.domain.Money.MAX_AMOUNT && title.isNotBlank())
+        val sharesPaise = shares.mapValues { com.invatech.pockit.domain.Money.legacyPaise(it.value) }
+        require(sharesPaise.values.all { it >= 0 } && com.invatech.pockit.domain.Money.sum(sharesPaise.values) == amountPaise) { "Shares must add up to the total." }
         val actualPayerId = currentUserId // Enforce current user as payer
         val expenseId = UUID.randomUUID().toString()
         val dateLabel = todayLabel()
@@ -250,6 +252,8 @@ class SpaceRepository(
         val expenseData = mapOf(
             "id" to expenseId,
             "title" to title.trim(),
+            "amountPaise" to amountPaise,
+            "sharesPaise" to sharesPaise,
             "amount" to amount,
             "paidById" to actualPayerId,
             "shares" to shares,
@@ -278,6 +282,8 @@ class SpaceRepository(
         val settlementData = mapOf(
             "id" to expenseId,
             "title" to "Settled up",
+            "amountPaise" to com.invatech.pockit.domain.Money.legacyPaise(settlement.amount),
+            "sharesPaise" to mapOf(settlement.toId to com.invatech.pockit.domain.Money.legacyPaise(settlement.amount)),
             "amount" to settlement.amount,
             "paidById" to settlement.fromId,
             "shares" to mapOf(settlement.toId to settlement.amount),
@@ -491,11 +497,12 @@ class SpaceRepository(
     private fun mapDocumentToExpense(doc: com.google.firebase.firestore.DocumentSnapshot): SpaceExpense? {
         val id = doc.getString("id") ?: doc.id
         val title = doc.getString("title") ?: return null
-        val amount = doc.getDouble("amount") ?: (doc.getLong("amount")?.toDouble() ?: return null)
+        val amount = doc.getLong("amountPaise")?.let { it / 100.0 } ?: doc.getDouble("amount") ?: (doc.getLong("amount")?.toDouble() ?: return null)
         val paidById = doc.getString("paidById") ?: ""
 
         @Suppress("UNCHECKED_CAST")
-        val sharesRaw = doc.get("shares") as? Map<String, Any> ?: emptyMap()
+        val minorUnits = doc.contains("sharesPaise")
+        val sharesRaw = doc.get(if (minorUnits) "sharesPaise" else "shares") as? Map<String, Any> ?: emptyMap()
         val shares = sharesRaw.mapNotNull { (key, value) ->
             val shareVal = when (value) {
                 is Double -> value
@@ -503,7 +510,7 @@ class SpaceRepository(
                 is Number -> value.toDouble()
                 else -> null
             }
-            if (shareVal != null) key to shareVal else null
+            if (shareVal != null) key to (if (minorUnits) shareVal / 100.0 else shareVal) else null
         }.toMap()
 
         val dateLabel = doc.getString("dateLabel") ?: "Today"

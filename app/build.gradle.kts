@@ -15,10 +15,14 @@ android {
         applicationId = "com.invatech.pockit"
         minSdk = 24
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.6"
+        versionCode = 8
+        versionName = "2.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = if (providers.gradleProperty("releaseSmoke").orNull == "true") {
+            "com.invatech.pockit.ReleaseSmokeInstrumentation"
+        } else {
+            "androidx.test.runner.AndroidJUnitRunner"
+        }
     }
 
     signingConfigs {
@@ -56,11 +60,12 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     lint {
-        abortOnError = false
-        checkReleaseBuilds = false
+        abortOnError = true
+        checkReleaseBuilds = true
     }
 }
 
@@ -69,6 +74,8 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
+    implementation("io.coil-kt.coil3:coil-compose:3.6.3")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.3")
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -99,13 +106,34 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 
+    // Google ML Kit Text Recognition (On-device OCR for Receipts & Bills)
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+
     // Google AdMob & User Messaging Platform (GDPR/UMP consent)
-    implementation(libs.play.services.ads)
+    implementation(libs.google.mobile.ads)
     implementation(libs.user.messaging.platform)
+
+    // Google Play In-App Updates
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
+
+    // Jetpack Glance AppWidget (Home Screen Quick Actions & Stats)
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
 
     // AndroidX Room Database (Offline-first Local Persistence)
     val roomVersion = "2.7.0"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
+
+    // AndroidX WorkManager (Reliable, Battery-efficient Local Background Scheduling)
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+}
+
+ksp { arg("room.schemaLocation", "$projectDir/schemas") }
+
+// Next-Gen contains mediation compatibility classes; never package both SDK runtimes.
+configurations.configureEach {
+    exclude(group = "com.google.android.gms", module = "play-services-ads")
+    exclude(group = "com.google.android.gms", module = "play-services-ads-lite")
 }

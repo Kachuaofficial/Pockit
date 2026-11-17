@@ -1,71 +1,40 @@
 package com.invatech.pockit.ui.space.util
 
 import com.invatech.pockit.ui.space.model.Space
-import kotlin.math.roundToLong
+import com.invatech.pockit.domain.Money
 
-data class Settlement(
-    val fromId: String,
-    val toId: String,
-    val amount: Double
-)
+data class Settlement(val fromId: String, val toId: String, val amount: Double)
 
+/** Legacy UI exposes rupees, but all balance and settlement arithmetic uses exact paise. */
 object BalanceCalculator {
-
-    /** memberId -> net balance. Positive = gets back money, negative = owes money. Only counts confirmed expenses/settlements. */
     fun netBalances(space: Space): Map<String, Double> {
-        val net = space.members.associate { it.id to 0.0 }.toMutableMap()
-        if (space.isHousehold) {
-            return net
+        val net = space.members.associate { it.id to 0L }.toMutableMap()
+        if (!space.isHousehold) space.expenses.filter { it.isConfirmed }.forEach { expense ->
+            net[expense.paidById] = Math.addExact(net[expense.paidById] ?: 0L, Money.legacyPaise(expense.amount))
+            expense.shares.forEach { (id, amount) -> net[id] = Math.subtractExact(net[id] ?: 0L, Money.legacyPaise(amount)) }
         }
-        space.expenses.forEach { expense ->
-            if (expense.isConfirmed) {
-                net[expense.paidById] = (net[expense.paidById] ?: 0.0) + expense.amount
-                expense.shares.forEach { (memberId, share) ->
-                    net[memberId] = (net[memberId] ?: 0.0) - share
-                }
-            }
-        }
-        return net
+        return net.mapValues { it.value / 100.0 }
     }
-
-    /** Minimal set of payments that settles everyone (greedy). */
     fun settlements(net: Map<String, Double>): List<Settlement> {
-        val creditors = net.filter { it.value > 0.01 }
-            .map { it.key to it.value }
-            .sortedByDescending { it.second }
-            .toMutableList()
-        val debtors = net.filter { it.value < -0.01 }
-            .map { it.key to -it.value }
-            .sortedByDescending { it.second }
-            .toMutableList()
-
+        val paise = net.mapValues { Money.legacyPaise(it.value) }
+        require(Money.sum(paise.values) == 0L) { "Balances do not reconcile. Check expense shares." }
+        val creditors = paise.filterValues { it > 0 }.toList().sortedByDescending { it.second }.toMutableList()
+        val debtors = paise.filterValues { it < 0 }.map { it.key to -it.value }.sortedByDescending { it.second }.toMutableList()
         val result = mutableListOf<Settlement>()
-        var i = 0
-        var j = 0
+        var i = 0; var j = 0
         while (i < debtors.size && j < creditors.size) {
-            val (debtorId, debtorAmount) = debtors[i]
-            val (creditorId, creditorAmount) = creditors[j]
-            val pay = minOf(debtorAmount, creditorAmount)
-            result += Settlement(debtorId, creditorId, (pay * 100).roundToLong() / 100.0)
-
-            val debtorLeft = debtorAmount - pay
-            val creditorLeft = creditorAmount - pay
-            debtors[i] = debtorId to debtorLeft
-            creditors[j] = creditorId to creditorLeft
-            if (debtorLeft < 0.01) i++
-            if (creditorLeft < 0.01) j++
+            val (debtor, debt) = debtors[i]; val (creditor, credit) = creditors[j]
+            val pay = minOf(debt, credit)
+            result += Settlement(debtor, creditor, pay / 100.0)
+            debtors[i] = debtor to debt - pay; creditors[j] = creditor to credit - pay
+            if (debt == pay) i++
+            if (credit == pay) j++
         }
         return result
     }
-
-    /** Splits [amount] equally in paise so the shares always add up exactly. */
     fun splitEqually(amount: Double, ids: List<String>): Map<String, Double> {
-        if (ids.isEmpty() || amount <= 0.0) return emptyMap()
-        val totalCents = (amount * 100).roundToLong()
-        val base = totalCents / ids.size
-        val remainder = (totalCents % ids.size).toInt()
-        return ids.mapIndexed { index, id ->
-            id to (base + if (index < remainder) 1 else 0) / 100.0
-        }.toMap()
+        if (ids.isEmpty() || amount <= 0) return emptyMap()
+        require(ids.distinct().size == ids.size)
+        return ids.zip(Money.split(Money.legacyPaise(amount), ids.size).map { it / 100.0 }).toMap()
     }
 }

@@ -14,7 +14,7 @@ class PockitFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "Refreshed FCM token: $token")
+
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser != null) {
             FcmTokenManager.updateTokenInFirestore(currentUser.uid, token)
@@ -54,16 +54,16 @@ class PockitFirebaseMessagingService : FirebaseMessagingService() {
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 val db = PockitDatabase.getDatabase(applicationContext)
-                db.notificationDao().insertNotification(
-                    NotificationEntity(
-                        title = title,
-                        body = body,
-                        type = type,
-                        targetId = targetId,
-                        timestamp = System.currentTimeMillis(),
-                        isRead = false
-                    )
-                )
+                val row = NotificationEntity(
+                    id = remoteMessage.messageId?.replace("/", "_") ?: java.util.UUID.randomUUID().toString(),
+                    title = title, body = body, type = type, targetId = targetId)
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                if (uid != null) {
+                    db.notificationDao().insertNotification(row)
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(uid)
+                        .collection("notifications").document(row.id).set(row)
+                }
+
             }.onFailure { e ->
                 Log.e(TAG, "Failed to persist incoming notification", e)
             }

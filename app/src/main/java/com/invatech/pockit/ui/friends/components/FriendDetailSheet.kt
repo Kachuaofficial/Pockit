@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.friends.model.ExpenseDirection
@@ -568,12 +569,26 @@ private fun LedgerItemRow(
             tx.creatorId.isNotBlank() &&
             tx.creatorId != currentUserId
 
+    val cleanTitle = remember(tx.description, tx.direction, tx.status) {
+        if (tx.direction == ExpenseDirection.SETTLE_UP) {
+            if (tx.description.isBlank() || tx.description.contains("settlement", ignoreCase = true)) {
+                "Settlement"
+            } else {
+                tx.description
+            }
+        } else {
+            tx.description.ifBlank {
+                if (tx.direction == ExpenseDirection.GAVE_UDHAR) "Lent" else "Borrowed"
+            }
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -586,12 +601,13 @@ private fun LedgerItemRow(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
                             .background(
                                 when {
-                                    tx.status == TransactionStatus.REJECTED -> ErrorRed.copy(alpha = 0.2f)
+                                    tx.status == TransactionStatus.REJECTED -> ErrorRed.copy(alpha = 0.15f)
                                     tx.status == TransactionStatus.PENDING -> MaterialTheme.colorScheme.tertiaryContainer
+                                    tx.direction == ExpenseDirection.SETTLE_UP -> MaterialTheme.colorScheme.secondaryContainer
                                     tx.direction == ExpenseDirection.GAVE_UDHAR -> MaterialTheme.colorScheme.primaryContainer
                                     tx.direction == ExpenseDirection.TOOK_UDHAR -> MaterialTheme.colorScheme.tertiaryContainer
                                     else -> MaterialTheme.colorScheme.secondaryContainer
@@ -602,6 +618,7 @@ private fun LedgerItemRow(
                         Icon(
                             imageVector = when {
                                 tx.status == TransactionStatus.REJECTED -> Icons.Rounded.Close
+                                tx.direction == ExpenseDirection.SETTLE_UP -> Icons.Rounded.Handshake
                                 tx.direction == ExpenseDirection.GAVE_UDHAR -> Icons.Rounded.ArrowDownward
                                 tx.direction == ExpenseDirection.TOOK_UDHAR -> Icons.Rounded.ArrowUpward
                                 else -> Icons.Rounded.CheckCircle
@@ -609,27 +626,34 @@ private fun LedgerItemRow(
                             contentDescription = null,
                             tint = when {
                                 tx.status == TransactionStatus.REJECTED -> ErrorRed
+                                tx.direction == ExpenseDirection.SETTLE_UP -> MaterialTheme.colorScheme.onSecondaryContainer
                                 tx.direction == ExpenseDirection.GAVE_UDHAR -> MaterialTheme.colorScheme.onPrimaryContainer
                                 tx.direction == ExpenseDirection.TOOK_UDHAR -> MaterialTheme.colorScheme.onTertiaryContainer
                                 else -> MaterialTheme.colorScheme.onSecondaryContainer
                             },
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(17.dp)
                         )
                     }
 
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = tx.description,
+                                text = cleanTitle,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
                             )
 
-                            // Status badge
+                            // Compact status badge
                             when (tx.status) {
                                 TransactionStatus.PENDING -> {
                                     Box(
@@ -670,7 +694,7 @@ private fun LedgerItemRow(
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
                                             Text(
-                                                text = "Verified ✓",
+                                                text = "Settled ✓",
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -684,14 +708,16 @@ private fun LedgerItemRow(
                         Text(
                             text = tx.formattedDate,
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
                         text = when {
@@ -706,6 +732,7 @@ private fun LedgerItemRow(
                             tx.status == TransactionStatus.REJECTED -> InkMuted
                             tx.direction == ExpenseDirection.GAVE_UDHAR -> MintDeep
                             tx.direction == ExpenseDirection.TOOK_UDHAR -> ErrorRed
+                            tx.direction == ExpenseDirection.SETTLE_UP -> MintDeep
                             else -> InkMuted
                         }
                     )
@@ -726,7 +753,7 @@ private fun LedgerItemRow(
 
             // Quick Inline Confirm / Reject Buttons for incoming pending transactions
             if (isIncomingPending) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
@@ -736,25 +763,25 @@ private fun LedgerItemRow(
                         text = "Confirm payment?",
                         fontSize = 11.sp,
                         color = InkMuted,
-                        modifier = Modifier.padding(end = 8.dp)
+                        modifier = Modifier.padding(end = 6.dp)
                     )
                     OutlinedButton(
                         onClick = onReject,
                         shape = CircleShape,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed),
                         border = BorderStroke(1.dp, ErrorRed.copy(alpha = 0.4f)),
-                        modifier = Modifier.height(28.dp)
+                        modifier = Modifier.height(26.dp)
                     ) {
-                        Text("Reject", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Reject", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Button(
                         onClick = onConfirm,
                         shape = CircleShape,
                         colors = ButtonDefaults.buttonColors(containerColor = MintDeep, contentColor = Color.White),
-                        modifier = Modifier.height(28.dp)
+                        modifier = Modifier.height(26.dp)
                     ) {
-                        Text("Confirm", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Confirm", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

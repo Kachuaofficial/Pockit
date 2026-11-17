@@ -25,9 +25,7 @@ class FriendRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    private val localDao: FriendDao? by lazy {
-        runCatching { PockitApplication.instance.database.friendDao() }.getOrNull()
-    }
+    private val localDao: FriendDao? = runCatching { PockitApplication.instance.database.friendDao() }.getOrNull()
     val currentUserId: String
         get() = auth.currentUser?.uid ?: "current_user_me"
 
@@ -132,7 +130,7 @@ class FriendRepository(
                     val creatorId = doc.getString("creatorId") ?: ""
                     val targetFriendId = doc.getString("friendId") ?: ""
                     val payerId = doc.getString("payerId")
-                    val rawAmount = doc.getDouble("amount") ?: 0.0
+                    val rawAmount = doc.getLong("amountPaise")?.let { it / 100.0 } ?: doc.getDouble("amount") ?: 0.0
 
                     // Normalize friendId so that from current user's perspective:
                     // friendId is the other person
@@ -277,6 +275,7 @@ class FriendRepository(
             "creatorName" to currentUserName,
             "friendId" to friendId,
             "participantIds" to listOf(uid, friendId),
+            "amountPaise" to com.invatech.pockit.domain.Money.legacyPaise(kotlin.math.abs(amount)),
             "amount" to kotlin.math.abs(amount),
             "direction" to direction.name,
             "description" to description.trim(),
