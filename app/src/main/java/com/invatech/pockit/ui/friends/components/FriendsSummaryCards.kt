@@ -1,7 +1,10 @@
 package com.invatech.pockit.ui.friends.components
 
+/*
+ * Friends toolbar, connection/expense actions, search input and filter controls.
+ */
+
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -18,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,22 +52,15 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.invatech.pockit.ui.common.mascot.MascotPose
-import com.invatech.pockit.ui.common.mascot.PockitMascot
 import com.invatech.pockit.ui.common.motion.M3Spring
 import com.invatech.pockit.ui.friends.model.FriendsFilter
 import com.invatech.pockit.ui.space.util.formatMoney
-import com.invatech.pockit.ui.theme.Cloud
-import com.invatech.pockit.ui.theme.CloudDeep
 import com.invatech.pockit.ui.theme.DarkBackground
 import com.invatech.pockit.ui.theme.DarkTextPrimary
 import com.invatech.pockit.ui.theme.DarkTextSecondary
-import com.invatech.pockit.ui.theme.Ink
 import com.invatech.pockit.ui.theme.InkMuted
-import com.invatech.pockit.ui.theme.Mint
 import com.invatech.pockit.ui.theme.MintContainerDark
 import com.invatech.pockit.ui.theme.MintDark
-import com.invatech.pockit.ui.theme.Peach
 import com.invatech.pockit.ui.theme.PeachContainerDark
 import com.invatech.pockit.ui.theme.PeachDark
 
@@ -125,10 +120,7 @@ fun FriendsSummaryCards(
                         color = InkMuted
                     )
                 }
-                PockitMascot(
-                    pose = MascotPose.HAPPY_WAVING,
-                    size = 46.dp
-                )
+
             }
 
             // QR Actions (My Code & Scan)

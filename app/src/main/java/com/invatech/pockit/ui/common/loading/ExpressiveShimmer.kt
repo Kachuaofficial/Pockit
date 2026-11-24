@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.common.loading
 
+/*
+ * Reusable shimmer modifier and placeholder box for loading layouts.
+ * Respects MotionSettings so disabling animation also stops the placeholder sweep.
+ */
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat

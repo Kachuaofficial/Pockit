@@ -1,5 +1,9 @@
 package com.invatech.pockit.glance
 
+/*
+ * Requests Glance widget refreshes after a ledger change. Keeps widget update work out of screen code.
+ */
+
 import android.content.Context
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope

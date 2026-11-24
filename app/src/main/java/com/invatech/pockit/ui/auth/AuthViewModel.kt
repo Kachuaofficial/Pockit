@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.auth
 
+/*
+ * Owns sign-in loading, session and error state consumed by MainActivity and LoginScreen.
+ * Uses AuthRepository for Firebase operations and exposes StateFlow rather than an Activity reference.
+ */
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.invatech.pockit.data.repository.AuthRepository
@@ -42,6 +47,10 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Exchanges the Google ID token through AuthRepository and updates loading/session/error state
+     * for the host UI.
+     */
     fun signInWithGoogleToken(idToken: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(

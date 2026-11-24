@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.common.ads
 
+/*
+ * Compose/Android-view host for native ad content.
+ * Binds a screen-owned native slot and releases the attachment through composition lifecycle callbacks.
+ */
+
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,8 +31,9 @@ fun PockitNativeAdCard(
     adUnitId: String = AdConfig.NATIVE_AD_UNIT_ID,
     placementKey: String = "native"
 ) {
+    val online = com.invatech.pockit.ui.common.rememberOnline()
     val ready by AdManager.adsReady.collectAsState()
-    if (!ready) return
+    if (!online || !ready || adUnitId.isBlank()) return
     val slots = LocalScreenAdSlots.current ?: rememberScreenAdSlots()
     val slot = slots.native(placementKey, adUnitId) ?: return
     DisposableEffect(slot) {

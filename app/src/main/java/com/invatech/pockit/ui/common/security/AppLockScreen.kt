@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.common.security
 
+/*
+ * Locked-app presentation and unlock request callback.
+ * BiometricAuthManager performs device authentication; this screen itself does not verify identity.
+ */
+
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -84,13 +89,13 @@ fun AppLockScreen(
                     modifier = Modifier
                         .size(80.dp)
                         .clip(CircleShape)
-                        .background(Ink),
+                        .background(com.invatech.pockit.ui.theme.PockitOrange),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Fingerprint,
                         contentDescription = "Biometric Lock",
-                        tint = Color.White,
+                        tint = com.invatech.pockit.ui.theme.PockitBackground,
                         modifier = Modifier.size(44.dp)
                     )
                 }
@@ -121,8 +126,8 @@ fun AppLockScreen(
                 onClick = onUnlockRequest,
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Ink,
-                    contentColor = Color.White
+                    containerColor = com.invatech.pockit.ui.theme.PockitOrange,
+                    contentColor = com.invatech.pockit.ui.theme.PockitBackground
                 ),
                 modifier = Modifier
                     .height(54.dp)

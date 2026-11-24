@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Android XML colour resources used by platform themes and launcher artwork. -->
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <color name="purple_200">#FFFFB454</color>
+    <color name="purple_500">#FFFF850F</color>
+    <color name="purple_700">#FFFF5C00</color>
+    <color name="teal_200">#FF40D99A</color>
+    <color name="teal_700">#FF40D99A</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
     <!-- Pockit Brand Warm Colors -->
-    <color name="pockit_cloud">#FFFDF9F2</color>
-    <color name="pockit_ink">#FF352B27</color>
-    <color name="pockit_mint">#FFDCF5E8</color>
-    <color name="pockit_mint_deep">#FF52B69A</color>
-    <color name="pockit_lavender">#FFF5E3F7</color>
-    <color name="pockit_peach">#FFFFE7D1</color>
+    <color name="pockit_cloud">#FFFFFBF6</color>
+    <color name="pockit_ink">#FF493A48</color>
+    <color name="pockit_mint">#FFDDF5E9</color>
+    <color name="pockit_mint_deep">#FF43A989</color>
+    <color name="pockit_lavender">#FFECE3FF</color>
+    <color name="pockit_peach">#FFFFE1D6</color>
 </resources>

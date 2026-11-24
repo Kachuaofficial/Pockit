@@ -1,5 +1,9 @@
 package com.invatech.pockit.domain
 
+/*
+ * Unit tests for the separate signed recorded-balance parser and balance-related arithmetic assumptions.
+ */
+
 import org.junit.Assert.*
 import org.junit.Test
 

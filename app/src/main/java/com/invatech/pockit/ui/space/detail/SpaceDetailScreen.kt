@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.space.detail
 
+/*
+ * Space history, member actions and pending-receipt controls.
+ * Uses BalanceCalculator for bill-split positions and keeps household presentation distinct from debt settlement.
+ */
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -450,8 +455,8 @@ fun SpaceDetailScreen(
                                     members = membersById
                                 )
                             }
-                            if (index == 7 && index < space.expenses.lastIndex) {
-                                PockitNativeAdCard(placementKey = "SpaceDetailScreen.native.1", modifier = Modifier.padding(vertical = 4.dp))
+                            if (com.invatech.pockit.ui.common.ads.NativePlacementPolicy.afterRow(index, space.expenses.size)) {
+                                PockitNativeAdCard(placementKey = "SpaceDetailScreen.native.$index", modifier = Modifier.padding(vertical = 4.dp))
                             }
                         }
                     }

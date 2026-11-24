@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.entity
 
+/*
+ * Local cache of direct friend events with direction, payer and confirmation status. Historic amounts are Double rupees.
+ */
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.invatech.pockit.ui.friends.model.ExpenseDirection

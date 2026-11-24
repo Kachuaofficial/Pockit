@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.friends.components
 
+/*
+ * Connected-friend summary card with balance-dependent colours and caller-owned navigation.
+ */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -60,22 +64,22 @@ fun FriendItemCard(
     val (cardBg, avatarBg, initialColor, amountColor) = remember(balance) {
         when {
             balance > 0.01 -> Quadruple(
-                Color(0xFFDFF5E0), // Soft Mint (Lent / You'll Get)
-                Color(0xFF9EDDA5),
-                Color(0xFF1E562B),
-                Color(0xFF2E7D42)
+                Color(0xFF153026), // Soft Mint (Lent / You'll Get)
+                Color(0xFF285742),
+                Color(0xFF76E5AD),
+                Color(0xFF40D99A)
             )
             balance < -0.01 -> Quadruple(
-                Color(0xFFFFDDD3), // Soft Coral/Peach (Borrowed / You'll Give)
-                Color(0xFFFFA690),
-                Color(0xFF6B2D1E),
-                Color(0xFFB33A24)
+                Color(0xFF332115), // Soft Coral/Peach (Borrowed / You'll Give)
+                Color(0xFF704226),
+                Color(0xFFFFB454),
+                Color(0xFFFF9A62)
             )
             else -> Quadruple(
-                Color(0xFFEDE6FB), // Soft Lavender (All Settled)
-                Color(0xFFC9B8F3),
-                Color(0xFF43306B),
-                Color(0xFF5B458A)
+                Color(0xFF292037), // Soft Lavender (All Settled)
+                Color(0xFF514064),
+                Color(0xFFD5B4FF),
+                Color(0xFFB67AFF)
             )
         }
     }
@@ -152,14 +156,14 @@ fun FriendItemCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFFFFB27A).copy(alpha = 0.3f))
+                            .background(Color(0xFFFF9A39).copy(alpha = 0.3f))
                             .padding(horizontal = 5.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "⏳ Pending",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF8A3B14)
+                            color = Color(0xFFFFB454)
                         )
                     }
                 }

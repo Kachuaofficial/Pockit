@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * Unit tests for supported payment text, incoming/outgoing direction, rejection and ambiguous amounts.
+ */
+
 import com.invatech.pockit.ui.home.model.WalletTransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

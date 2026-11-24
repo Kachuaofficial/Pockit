@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.notification
 
+/*
+ * Explains optional notification access for payment review and opens the system settings flow.
+ * Notification-listener access is a separate OS permission from permission to display Pockit notifications.
+ */
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,12 +16,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
@@ -39,13 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.invatech.pockit.ui.common.mascot.MascotPose
-import com.invatech.pockit.ui.common.mascot.PockitMascot
-import com.invatech.pockit.ui.common.motion.kawaiiFloating
 import com.invatech.pockit.ui.theme.CocoaEspresso
-import com.invatech.pockit.ui.theme.CocoaMuted
 import com.invatech.pockit.ui.theme.MintDeep
-import com.invatech.pockit.ui.theme.PastelPeach
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,12 +66,6 @@ fun UpiPermissionSheet(
                 .padding(bottom = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Cute floating cat mascot
-            PockitMascot(
-                pose = MascotPose.HAPPY_WAVING,
-                size = 76.dp,
-                modifier = Modifier.kawaiiFloating(durationMillis = 3200, floatDistance = 3f)
-            )
 
             Spacer(modifier = Modifier.height(14.dp))
 

@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.dao
 
+/*
+ * Local category-budget queries and snapshot replacement used by BudgetRepository.
+ */
+
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy

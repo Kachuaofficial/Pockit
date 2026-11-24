@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.common.legal
 
+/*
+ * In-app privacy, terms and copyright text shown in a selectable bottom sheet.
+ * This is explanatory content; actual permissions are enforced by Android and server configuration.
+ */
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -297,7 +302,7 @@ private fun PrivacyPolicyContent() {
         LegalSection(
             number = "4",
             title = "Third-Party Services & Advertising",
-            body = "Pockit integrates with Google Identity Services for authentication, Firebase for database sync, and Google AdMob for delivering non-intrusive advertisements to support free development. AdMob and its advertising partners may process device identifiers and anonymized usage data in accordance with Google's Privacy Policy. European and UK users can manage their consent choices at any time via the User Messaging Platform dialog."
+            body = "Pockit uses Google Identity for sign-in, Firebase for account sync, and Google AdMob for banner, native and optional rewarded ads. Reward videos are shown only after you choose a clearly labelled offer. Completing one stores a 24-hour feature unlock locally on your device. AdMob and its advertising partners may process device identifiers and ad interaction data. Consent choices can be managed through the app's ad privacy controls. Firebase App Check and Play Integrity help verify authentic app requests. Pockit does not sell subscriptions or virtual coins."
         )
 
         LegalSection(
@@ -372,6 +377,8 @@ private fun TermsOfServiceContent() {
             title = "Governing Law",
             body = "These Terms are governed by and construed in accordance with the laws of India. Any legal dispute shall be subject to the exclusive jurisdiction of the competent courts in India."
         )
+        LegalSection(number = "7", title = "Advertising and rewarded access",
+            body = "Pockit is supported by advertising and does not sell subscriptions or virtual coins. Banner and native ads may appear during everyday use. Reward videos are optional and appear only after you select an offer. Completing a rewarded video unlocks the named feature on that device for 24 hours; closing it early does not unlock access. Watching again extends access by another 24 hours. Core personal expense tracking remains available without completing a rewarded video.")
     }
 }
 

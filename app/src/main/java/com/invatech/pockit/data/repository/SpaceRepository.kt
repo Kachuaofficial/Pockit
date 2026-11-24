@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.repository
 
+/*
+ * Cloud access for spaces, member lists, shared bills and settlement acknowledgement.
+ * Validates amounts/shares in the client and maps compatibility rupee fields; authorization still depends on server rules.
+ */
+
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -40,8 +45,8 @@ class SpaceRepository(
         get() = auth.currentUser?.displayName?.split(" ")?.firstOrNull() ?: "You"
 
     /**
-     * Realtime flow of all spaces the current user belongs to.
-     * Automatically syncs when any member creates, joins, or updates a space.
+     * Streams spaces matching the current account and caches their metadata. callbackFlow keeps
+     * the listener active while collected and awaitClose removes it after cancellation.
      */
     fun observeSpaces(): Flow<List<Space>> = callbackFlow {
         val uid = currentUserId
@@ -78,8 +83,8 @@ class SpaceRepository(
     }
 
     /**
-     * Realtime flow for expenses belonging to a specific space.
-     * Includes a default limit of 100 to prevent unbounded document reads.
+     * Streams a space history and maps server paise/legacy fields into SpaceExpense. Consumers
+     * decide how confirmation flags affect display and balances.
      */
     fun observeExpenses(spaceId: String, limit: Long = 100): Flow<List<SpaceExpense>> = callbackFlow {
         val listener = firestore.collection("spaces")
@@ -119,7 +124,8 @@ class SpaceRepository(
     }
 
     /**
-     * Creates a new space document in Firestore.
+     * Creates a space with its creator, initial member, display choices and invitation code. The
+     * code is an identifier used by the join flow, not encryption or authentication.
      */
     suspend fun createSpace(
         name: String,
@@ -159,7 +165,9 @@ class SpaceRepository(
     }
 
     /**
-     * Joins an existing space using a 6-character invite code.
+     * Resolves the supplied invite code and adds the signed-in user when the current rules allow
+     * the query/update. Returns Success, NotFound or AlreadyMember for the UI; knowing a code does
+     * not bypass server authorization.
      */
     suspend fun joinSpace(code: String): JoinResult {
         val cleaned = code.trim().uppercase()
@@ -228,11 +236,9 @@ class SpaceRepository(
     }
 
     /**
-     * Adds an expense to the space subcollection and updates space total.
-     */
-    /**
-     * Adds an expense to the space subcollection.
-     * Enforces that the payer is always the authenticated user (cannot add expense for someone else).
+     * Validates title, positive amount and the exact sum of non-negative shares in paise. The
+     * persisted payer is always currentUserId in this creation path, even though the API retains a
+     * paidById argument for compatibility.
      */
     suspend fun addExpense(
         spaceId: String,
@@ -272,8 +278,9 @@ class SpaceRepository(
     }
 
     /**
-     * Records a settlement payment between two members.
-     * Initialized with isConfirmed = false until the receiver confirms payment receipt.
+     * Writes a settlement intent with isConfirmed=false. The record describes an external payment
+     * claim and remains excluded from confirmed net positions until acknowledgement; this method
+     * does not transfer money.
      */
     suspend fun settle(spaceId: String, settlement: Settlement) {
         val expenseId = UUID.randomUUID().toString()
@@ -302,7 +309,9 @@ class SpaceRepository(
     }
 
     /**
-     * Confirms that a settlement payment was received. Only the receiver (creditor) can confirm.
+     * Checks the recipient derived from the stored share map before setting isConfirmed=true. This
+     * is a client-side guard; the current shared-expense server rule is broader and must be
+     * considered separately.
      */
     suspend fun confirmSettlement(spaceId: String, expenseId: String): Result<Unit> = runCatching {
         val expenseRef = firestore.collection("spaces")
@@ -323,7 +332,8 @@ class SpaceRepository(
     }
 
     /**
-     * Declines or cancels an unconfirmed settlement payment.
+     * Requests rejection/removal of an unconfirmed settlement through the supported participant
+     * path and reports failure to its caller.
      */
     suspend fun rejectSettlement(spaceId: String, expenseId: String): Result<Unit> = runCatching {
         val expenseRef = firestore.collection("spaces")
@@ -345,8 +355,8 @@ class SpaceRepository(
     }
 
     /**
-     * Deletes an expense document from the space subcollection in Firestore.
-     * Only the transaction owner who paid for the expense can delete it.
+     * Deletes a shared record through the repository checks and returns a Result for the
+     * optimistic UI rollback path.
      */
     suspend fun deleteExpense(spaceId: String, expenseId: String): Result<Unit> = runCatching {
         val expenseRef = firestore.collection("spaces")
@@ -365,7 +375,8 @@ class SpaceRepository(
     }
 
     /**
-     * Restores a previously deleted expense document back to Firestore.
+     * Writes back a deleted expense using the supplied original event fields, supporting the
+     * detail screen Undo operation.
      */
     suspend fun restoreExpense(spaceId: String, expense: SpaceExpense) {
         val expenseData = mapOf(
@@ -532,6 +543,10 @@ class SpaceRepository(
     private fun todayLabel(): String =
         SimpleDateFormat("d MMM", Locale.getDefault()).format(Date())
 
+    /**
+     * Builds the short invitation identifier from an alphabet that omits ambiguous characters. A
+     * readable random code is not an encrypted credential.
+     */
     private fun generateInviteCode(): String {
         val alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
         return (1..6).map { alphabet.random() }.joinToString("")

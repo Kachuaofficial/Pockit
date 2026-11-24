@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.entity
 
+/*
+ * Local shared-expense row, including settlement/confirmation flags. Historic amount and share fields remain rupee-valued.
+ */
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.invatech.pockit.ui.space.model.SpaceExpense

@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.friends.util
 
+/*
+ * Encodes a Pockit connection payload as a QR bitmap using ZXing.
+ * The bitmap carries identifiers, not authentication credentials or payment authorization.
+ */
+
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb

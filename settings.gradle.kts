@@ -1,3 +1,7 @@
+/*
+ * Gradle project/module and repository configuration. Controls where plugins and dependencies are resolved.
+ */
+
 pluginManagement {
     repositories {
         google {

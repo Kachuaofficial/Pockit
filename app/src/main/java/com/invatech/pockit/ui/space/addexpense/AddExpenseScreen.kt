@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.space.addexpense
 
+/*
+ * Shared-expense form for selecting participants and allocating a bill.
+ * The supported creation path uses the signed-in payer and requires shares to reconcile before submission.
+ */
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +55,11 @@ import kotlin.math.abs
 
 private val MoneyInput = Regex("""\d{0,7}(\.\d{0,2})?""")
 
+/**
+ * Collects a shared bill, allocation mode and participating members. Equal shares use the paise
+ * splitter; custom shares must reconcile. This form and the repository currently record the
+ * signed-in user as payer.
+ */
 @Composable
 fun AddExpenseScreen(
     spaceId: String,

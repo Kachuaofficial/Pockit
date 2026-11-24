@@ -1,5 +1,9 @@
 package com.invatech.pockit
 
+/*
+ * Generated arithmetic sanity test. This does not validate a Pockit business workflow.
+ */
+
 import org.junit.Test
 
 import org.junit.Assert.*

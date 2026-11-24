@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.profile
 
+/*
+ * Account profile, preferences, app-lock and notification/privacy controls.
+ * Separates local OS/device capabilities from account-synchronized choices.
+ */
+
 import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -34,7 +39,8 @@ import com.invatech.pockit.ui.theme.*
 fun ProfileScreen(
     onSignOut: () -> Unit = {},
     onNavigateToBudgets: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPerks: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val motion by MotionSettings.enabled.collectAsState()
@@ -88,6 +94,8 @@ fun ProfileScreen(
             }
         } }
         item { ProfileSection("Money tools") {
+            ProfileLink("Feature access", "Unlock advanced tools with rewarded ads", onPerks)
+            HorizontalDivider()
             ProfileLink("Budgets", "Set monthly and category limits", onNavigateToBudgets)
         } }
         item { ProfileSection("Payment notifications") {
@@ -109,8 +117,8 @@ fun ProfileScreen(
             }
             if (reminders) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Low", "Standard", "Frequent").forEachIndexed { index, label ->
-                        FilterChip(frequency == index + 1, { frequency = index + 1; PockitEngagementNotificationManager.setFrequency(context, frequency) }, label = { Text(label) })
+                    listOf("Low" to 1, "Standard" to 3, "Frequent" to 6).forEach { (label, value) ->
+                        FilterChip(frequency == value, { frequency = value; PockitEngagementNotificationManager.setFrequency(context, frequency) }, label = { Text(label) })
                     }
                 }
             }
@@ -123,6 +131,7 @@ fun ProfileScreen(
                 }
             }
         } }
+        item { com.invatech.pockit.ui.common.ads.PockitNativeAdCard(placementKey="profile.preferences.native") }
         item { ProfileSection("About Pockit") {
             ProfileLink("Privacy & terms", "Read how your information is handled", { legal = true })
             if (context is Activity && consentRequired) {

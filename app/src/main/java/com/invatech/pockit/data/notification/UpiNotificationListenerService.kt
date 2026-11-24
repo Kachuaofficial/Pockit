@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * OS notification-listener callback for supported payment apps.
+ * Checks opt-in and app selection before passing extracted text to the parser and review manager.
+ */
+
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification

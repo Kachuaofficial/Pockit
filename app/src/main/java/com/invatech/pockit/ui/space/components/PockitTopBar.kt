@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Common space-screen heading and circular navigation/action buttons.
+ */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

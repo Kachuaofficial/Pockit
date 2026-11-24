@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.biometric
 
+/*
+ * Device capability check, optional app-lock preference and BiometricPrompt callbacks.
+ * This protects local access; it does not authenticate a bank transfer or replace Firebase account identity.
+ */
+
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.biometric.BiometricManager

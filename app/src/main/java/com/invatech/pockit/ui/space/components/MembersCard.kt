@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Displays members and reports member actions; authorization and persistence remain with the parent/repository.
+ */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

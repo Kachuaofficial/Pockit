@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.common.motion
 
+/*
+ * Navigation and predictive-back animation helpers with animation-disabled paths.
+ * Composition locals share transition scopes without moving navigation ownership into individual widgets.
+ */
+
 import androidx.activity.BackEventCompat
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibilityScope

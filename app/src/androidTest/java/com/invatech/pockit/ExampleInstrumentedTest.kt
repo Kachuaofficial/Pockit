@@ -1,5 +1,9 @@
 package com.invatech.pockit
 
+/*
+ * Generated installed-package smoke test. It does not establish end-to-end finance correctness.
+ */
+
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 

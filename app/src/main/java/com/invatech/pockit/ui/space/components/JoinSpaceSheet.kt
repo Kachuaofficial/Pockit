@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Collects a join code and displays the repository join result with local loading/error state.
+ */
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically

@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.space.model
 
+/*
+ * Shared-space domain/UI models, membership helpers and join results.
+ * Historic amount and share fields are in rupees; BalanceCalculator converts them before monetary arithmetic.
+ */
+
 import androidx.compose.ui.graphics.Color
 import com.google.firebase.auth.FirebaseAuth
 import com.invatech.pockit.ui.theme.Lavender

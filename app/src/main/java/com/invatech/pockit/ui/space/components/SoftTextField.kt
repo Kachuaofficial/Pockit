@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Common text-field appearance for shared-space forms; callers own the entered value and validation.
+ */
+
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions

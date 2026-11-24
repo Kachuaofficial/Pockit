@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.local.converters
 
+/*
+ * Room converters for member lists, share maps and enum fields.
+ * Serialize compound values at the SQLite boundary and provide compatibility defaults when reading older records.
+ */
+
 import androidx.room.TypeConverter
 import com.invatech.pockit.ui.friends.model.ExpenseDirection
 import com.invatech.pockit.ui.friends.model.TransactionStatus

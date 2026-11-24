@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.dao
 
+/*
+ * Local personal-wallet history queries and mutations. Snapshot replacement is transactional so stale rows are removed together.
+ */
+
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -9,6 +13,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WalletDao {
+    /**
+     * Replaces the cached wallet history inside a Room transaction. Clearing and inserting as one
+     * local operation prevents observers from treating a partial snapshot as the final refresh
+     * result.
+     */
     @androidx.room.Transaction
     suspend fun replaceSnapshot(rows: List<WalletTransactionEntity>) {
         clearTransactions()

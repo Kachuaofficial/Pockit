@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Participant row for equal/custom allocation; delegates selection and share changes to the form.
+ */
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState

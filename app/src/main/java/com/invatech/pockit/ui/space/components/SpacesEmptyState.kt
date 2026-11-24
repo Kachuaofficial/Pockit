@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Empty-state explanation shown before shared spaces are available.
+ */
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +18,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.invatech.pockit.ui.common.mascot.MascotPose
-import com.invatech.pockit.ui.common.mascot.PockitMascot
 
 @Composable
 fun SpacesEmptyState(modifier: Modifier = Modifier) {

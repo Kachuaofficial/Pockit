@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.finance
 
+/*
+ * Collects missing account profile details before the user continues the supported account workflow.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*

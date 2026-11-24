@@ -1,6 +1,11 @@
 
 package com.invatech.pockit.data.repository
 
+/*
+ * Firebase session operations and user-profile persistence after Google sign-in.
+ * The Google token is exchanged for a Firebase credential; the client does not collect a Google password.
+ */
+
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -53,7 +58,6 @@ class AuthRepository(
                 }
             }.await()
 
-            com.invatech.pockit.data.rewards.UserRewardManager.syncWithFirebase()
 
             Result.success(Unit)
 

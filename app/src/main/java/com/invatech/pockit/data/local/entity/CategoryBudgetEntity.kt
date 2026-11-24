@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.entity
 
+/*
+ * Local category-budget row keyed by category; limits are Long paise and warning thresholds are percentages.
+ */
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 

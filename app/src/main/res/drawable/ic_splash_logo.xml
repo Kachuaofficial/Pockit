@@ -1,18 +1,1 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="128dp"
-    android:height="128dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-
-    <!-- Circle badge container in Pockit Ink -->
-    <path
-        android:fillColor="@color/pockit_ink"
-        android:pathData="M 54,16 C 74.985,16 92,33.015 92,54 C 92,74.985 74.985,92 54,92 C 33.015,92 16,74.985 16,54 C 16,33.015 33.015,16 54,16 Z" />
-
-    <!-- Distinctive Pockit 'P' lettermark in Mint -->
-    <path
-        android:fillColor="@color/pockit_mint"
-        android:fillType="evenOdd"
-        android:pathData="M 43,35 H 56.5 C 64.2,35 69,39.3 69,46 C 69,52.7 64.2,57 56.5,57 H 50 V 73 H 43 Z M 50,41.5 V 50.5 H 56 C 59.8,50.5 62,49 62,46 C 62,43 59.8,41.5 56,41.5 Z" />
-
-</vector>
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@drawable/pockit_adaptive_foreground" android:gravity="fill" android:filter="true"/>

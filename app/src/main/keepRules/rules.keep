@@ -1,3 +1,5 @@
+# Packaged keep configuration for framework/library integration. These rules affect release shrinking, not normal Kotlin call flow.
+
 # Add project specific R8 rules here.
 # AGP will combine all keep rule files in src/main/keepRules to pass to R8
 #

@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Space identity header with rename and invitation callbacks supplied by the detail screen.
+ */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,7 +54,7 @@ fun SpaceHeaderCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(Color.White),
+                    .background(com.invatech.pockit.ui.theme.PockitElevated),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = space.emoji, style = MaterialTheme.typography.displaySmall)
@@ -71,7 +75,7 @@ fun SpaceHeaderCard(
                         modifier = Modifier
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.6f))
+                            .background(com.invatech.pockit.ui.theme.PockitElevated)
                             .clickable(onClick = onRename),
                         contentAlignment = Alignment.Center
                     ) {
@@ -116,7 +120,7 @@ fun SpaceHeaderCard(
             Row(
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(Ink)
+                    .background(com.invatech.pockit.ui.theme.PockitOrange)
                     .clickable(onClick = onInvite)
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -124,13 +128,13 @@ fun SpaceHeaderCard(
                 Icon(
                     imageVector = Icons.Rounded.PersonAdd,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = com.invatech.pockit.ui.theme.PockitBackground,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Invite",
-                    color = Color.White,
+                    color = com.invatech.pockit.ui.theme.PockitBackground,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold
                 )

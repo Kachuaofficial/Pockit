@@ -1,5 +1,10 @@
 package com.invatech.pockit.glance
 
+/*
+ * Glance home-screen widget showing wallet information and quick-entry actions.
+ * It runs outside the activity UI and opens MainActivity through intents rather than sharing a Compose screen.
+ */
+
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
@@ -31,7 +36,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.invatech.pockit.MainActivity
 import com.invatech.pockit.data.local.database.PockitDatabase
-import com.invatech.pockit.ui.common.mascot.MascotCustomizationManager
 import com.invatech.pockit.ui.home.model.WalletTransactionType
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -82,16 +86,13 @@ class PockitHomeWidget : GlanceAppWidget() {
         val dateFormat = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
         val dateString = dateFormat.format(Date())
 
-        val equippedAccessory = MascotCustomizationManager.equippedAccessory.value
-        val mascotEmoji = if (equippedAccessory.iconEmoji.isNotBlank()) equippedAccessory.iconEmoji else "🐾"
 
         provideContent {
             WidgetContent(
                 context = context,
                 dateString = dateString,
                 todaySpent = formattedTodaySpent,
-                balance = formattedBalance,
-                mascotEmoji = mascotEmoji
+                balance = formattedBalance
             )
         }
     }
@@ -101,8 +102,7 @@ class PockitHomeWidget : GlanceAppWidget() {
         context: Context,
         dateString: String,
         todaySpent: String,
-        balance: String,
-        mascotEmoji: String
+        balance: String
     ) {
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -113,16 +113,16 @@ class PockitHomeWidget : GlanceAppWidget() {
             putExtra("open_add_transaction", true)
         }
 
-        val primaryText = ColorProvider(Color(0xFF2C241E), Color(0xFF2C241E))
-        val mutedText = ColorProvider(Color(0xFF8D6E63), Color(0xFF8D6E63))
-        val expenseRed = ColorProvider(Color(0xFFC62828), Color(0xFFC62828))
-        val balanceGreen = ColorProvider(Color(0xFF2E7D32), Color(0xFF2E7D32))
-        val whiteText = ColorProvider(Color.White, Color.White)
+        val primaryText = ColorProvider(Color(0xFFF5F5F7), Color(0xFFF5F5F7))
+        val mutedText = ColorProvider(Color(0xFFB6B6BF), Color(0xFFB6B6BF))
+        val expenseRed = ColorProvider(Color(0xFFFF8A90), Color(0xFFFF8A90))
+        val balanceGreen = ColorProvider(Color(0xFF40D99A), Color(0xFF40D99A))
+        val whiteText = ColorProvider(Color(0xFF090A0D), Color(0xFF090A0D))
 
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFFFFFDF9))
+                .background(Color(0xFF141518))
                 .cornerRadius(22.dp)
                 .clickable(actionStartActivity(openAppIntent))
                 .padding(14.dp)
@@ -136,7 +136,7 @@ class PockitHomeWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "$mascotEmoji Pockit",
+                        text = "Pockit",
                         style = TextStyle(
                             color = primaryText,
                             fontSize = 14.sp,
@@ -165,7 +165,7 @@ class PockitHomeWidget : GlanceAppWidget() {
                     Column(
                         modifier = GlanceModifier
                             .defaultWeight()
-                            .background(Color(0xFFFFEFEA))
+                            .background(Color(0xFF332115))
                             .cornerRadius(12.dp)
                             .padding(horizontal = 8.dp, vertical = 6.dp)
                     ) {
@@ -194,7 +194,7 @@ class PockitHomeWidget : GlanceAppWidget() {
                     Column(
                         modifier = GlanceModifier
                             .defaultWeight()
-                            .background(Color(0xFFE8F5E9))
+                            .background(Color(0xFF153026))
                             .cornerRadius(12.dp)
                             .padding(horizontal = 8.dp, vertical = 6.dp)
                     ) {
@@ -229,7 +229,7 @@ class PockitHomeWidget : GlanceAppWidget() {
                     Row(
                         modifier = GlanceModifier
                             .defaultWeight()
-                            .background(Color(0xFF2C241E))
+                            .background(Color(0xFFFF850F))
                             .cornerRadius(10.dp)
                             .clickable(actionStartActivity(quickAddIntent))
                             .padding(vertical = 6.dp),

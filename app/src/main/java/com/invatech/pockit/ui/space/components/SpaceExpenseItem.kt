@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Shared-bill/settlement row with payer, share and pending-state presentation.
+ */
+
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,8 +29,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.space.model.CurrentUserId
@@ -53,13 +63,13 @@ fun SpaceExpenseItem(
 
     val (statusText, statusColor) = when {
         isPendingSettlement -> "Pending confirmation" to ErrorRed
-        expense.isSettlement -> "Settled up ✓" to Color(0xFF2E7D42)
+        expense.isSettlement -> "Settled up ✓" to Color(0xFF40D99A)
         expense.paidById == CurrentUserId -> {
             val lent = expense.amount - (myShare ?: 0.0)
-            if (lent > 0.005) "you lent ${formatMoney(lent)}" to Color(0xFF2E7D42)
+            if (lent > 0.005) "you lent ${formatMoney(lent)}" to Color(0xFF40D99A)
             else "just you" to CocoaMuted
         }
-        myShare != null -> "you owe ${formatMoney(myShare)}" to Color(0xFFB33A24)
+        myShare != null -> "you owe ${formatMoney(myShare)}" to Color(0xFFFF9A62)
         else -> "not involved" to CocoaMuted
     }
 
@@ -74,33 +84,23 @@ fun SpaceExpenseItem(
         "Paid by $payerName • ${expense.dateLabel}"
     }
 
-    // Cheerful pastel color schemes consistent with Home TransactionItem & RecordDoodleUi
+    // Light category-aware surfaces match the transaction and friend-detail card system.
     val (cardBg, avatarBg, iconTint) = remember(expense.isSettlement, expense.paidById, myShare, isPendingSettlement) {
         when {
             isPendingSettlement -> Triple(
-                Color(0xFFFFDDD3), // Soft Coral
-                Color(0xFFFFA690),
-                Color(0xFF6B2D1E)
+                Color(0xFFFFF8F4), Color(0xFFFFE6D1), Color(0xFFE57B24)
             )
             expense.isSettlement -> Triple(
-                Color(0xFFEDE6FB), // Soft Lavender
-                Color(0xFFC9B8F3),
-                Color(0xFF43306B)
+                Color(0xFFF8FFFB), Color(0xFFDDF8EC), Color(0xFF078C62)
             )
             expense.paidById == CurrentUserId -> Triple(
-                Color(0xFFDFF5E0), // Soft Mint (You lent)
-                Color(0xFF9EDDA5),
-                Color(0xFF1E562B)
+                Color(0xFFF7FFFB), Color(0xFFDDF8EC), Color(0xFF078C62)
             )
             myShare != null -> Triple(
-                Color(0xFFFFE7D6), // Soft Peach/Apricot (You owe)
-                Color(0xFFFFB27A),
-                Color(0xFF7A3614)
+                Color(0xFFFFFAF7), Color(0xFFFFE5D4), Color(0xFFEA7B25)
             )
             else -> Triple(
-                Color(0xFFDBEFFB), // Soft Sky
-                Color(0xFF93CBF2),
-                Color(0xFF1B4E75)
+                Color(0xFFF8FBFF), Color(0xFFE0ECFF), Color(0xFF477CC7)
             )
         }
     }
@@ -111,19 +111,39 @@ fun SpaceExpenseItem(
         else -> Icons.AutoMirrored.Rounded.ReceiptLong
     }
 
-    Row(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(cardBg)
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .shadow(4.dp, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(24.dp))
+            .background(Brush.horizontalGradient(listOf(Color.White, cardBg)))
     ) {
+        Canvas(Modifier.matchParentSize()) {
+            val back = Path().apply {
+                moveTo(size.width * .46f, size.height)
+                cubicTo(size.width * .62f, size.height * .62f, size.width * .78f, size.height * .94f, size.width, size.height * .48f)
+                lineTo(size.width, size.height)
+                close()
+            }
+            val front = Path().apply {
+                moveTo(size.width * .67f, size.height)
+                cubicTo(size.width * .80f, size.height * .74f, size.width * .91f, size.height * .98f, size.width, size.height * .68f)
+                lineTo(size.width, size.height)
+                close()
+            }
+            drawPath(back, iconTint.copy(alpha = .08f))
+            drawPath(front, iconTint.copy(alpha = .14f))
+            drawCircle(iconTint.copy(alpha = .06f), size.minDimension * .30f, Offset(size.width * .93f, size.height * .14f))
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
         Box(
             modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
+                .size(48.dp)
+                .clip(RoundedCornerShape(15.dp))
                 .background(avatarBg),
             contentAlignment = Alignment.Center
         ) {
@@ -131,7 +151,7 @@ fun SpaceExpenseItem(
                 imageVector = iconVector,
                 contentDescription = null,
                 tint = iconTint,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(23.dp)
             )
         }
 
@@ -139,16 +159,20 @@ fun SpaceExpenseItem(
             Text(
                 text = expense.title,
                 style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold
                 ),
-                color = CocoaEspresso
+                color = CocoaEspresso,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(1.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                color = CocoaMuted
+                color = CocoaMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
@@ -157,19 +181,25 @@ fun SpaceExpenseItem(
                 text = formatMoney(expense.amount),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Black
                 ),
-                color = CocoaEspresso
+                color = iconTint,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(iconTint.copy(alpha = .10f))
+                    .padding(horizontal = 9.dp, vertical = 5.dp)
             )
             Spacer(modifier = Modifier.height(1.dp))
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = 10.sp,
-                    fontWeight = if (isPendingSettlement) FontWeight.Bold else FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 ),
-                color = statusColor
+                color = statusColor,
+                maxLines = 1
             )
         }
     }
+}
 }

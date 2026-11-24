@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.ml
 
+/*
+ * Runs ML Kit OCR on a selected receipt and heuristically suggests amount, merchant and category.
+ * The entry sheet lets the user review extracted values before saving a wallet event.
+ */
+
 import android.content.Context
 import android.net.Uri
 import android.util.Log
@@ -36,7 +41,9 @@ object ReceiptScannerManager {
     }
 
     /**
-     * Processes an image file Uri, runs ML Kit OCR, and parses the financial payload.
+     * Loads the selected image for on-device text recognition and returns suggested receipt fields
+     * or a failure. OCR is heuristic; the transaction form remains responsible for user review and
+     * final monetary validation.
      */
     suspend fun scanReceipt(context: Context, imageUri: Uri): Result<ScannedReceiptResult> = withContext(Dispatchers.IO) {
         runCatching {
@@ -89,6 +96,11 @@ object ReceiptScannerManager {
         )
     }
 
+    /**
+     * Searches receipt text for likely total lines and fallback amount candidates. A recognized
+     * number is only a suggestion because receipts can also contain tax, change and subtotal
+     * values.
+     */
     private fun extractAmount(lines: List<String>, rawText: String): Double? {
         val totalKeywords = listOf(
             "grand total", "total amount", "net amount", "total", "amount payable",

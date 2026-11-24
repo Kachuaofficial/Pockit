@@ -1,11 +1,22 @@
+/*
+ * Server-side Firestore create triggers for friend and space expense notifications.
+ * The Admin SDK reads delivery tokens and sends FCM messages after a record exists.
+ * These handlers neither calculate wallet balances nor verify external payment receipt.
+ */
+
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
-const admin = require("firebase-admin");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 
-admin.initializeApp();
+initializeApp();
 
-// Collocate functions in the exact same region as Firestore database (asia-south2)
+// Run triggers in the configured asia-south2 region; deployment must match the intended backend environment.
 setGlobalOptions({ region: "asia-south2" });
+
+// Account-scoped offline transaction sync.
+Object.assign(exports, require("./monetization"));
 
 /**
  * Triggered whenever a new transaction is created in friend_transactions.
@@ -36,7 +47,7 @@ exports.onFriendTransactionCreated = onDocumentCreated(
 
     try {
       // 1. Fetch friend's FCM token from Firestore
-      const userDoc = await admin.firestore().collection("users").doc(targetUserId).get();
+      const userDoc = await getFirestore().collection("users").doc(targetUserId).get();
       if (!userDoc.exists) {
         console.log(`User document not found for target user ${targetUserId}`);
         return null;
@@ -89,7 +100,7 @@ exports.onFriendTransactionCreated = onDocumentCreated(
         },
       };
 
-      const response = await admin.messaging().send(message);
+      const response = await getMessaging().send(message);
       console.log(`Successfully sent FCM notification to ${targetUserId}:`, response);
       return response;
     } catch (error) {
@@ -118,7 +129,7 @@ exports.onSpaceExpenseCreated = onDocumentCreated(
     const amount = Number(data.amount || 0).toLocaleString("en-IN");
 
     try {
-      const spaceDoc = await admin.firestore().collection("spaces").doc(spaceId).get();
+      const spaceDoc = await getFirestore().collection("spaces").doc(spaceId).get();
       if (!spaceDoc.exists) return null;
 
       const spaceData = spaceDoc.data();
@@ -130,8 +141,8 @@ exports.onSpaceExpenseCreated = onDocumentCreated(
       if (targetUserIds.length === 0) return null;
 
       // Use batched getAll to fetch all user documents in a single RPC instead of N individual roundtrips
-      const userRefs = targetUserIds.map((uid) => admin.firestore().collection("users").doc(uid));
-      const userDocs = userRefs.length > 0 ? await admin.firestore().getAll(...userRefs) : [];
+      const userRefs = targetUserIds.map((uid) => getFirestore().collection("users").doc(uid));
+      const userDocs = userRefs.length > 0 ? await getFirestore().getAll(...userRefs) : [];
 
       const tokens = userDocs
         .filter((doc) => doc.exists && doc.data()?.fcmToken)
@@ -161,7 +172,7 @@ exports.onSpaceExpenseCreated = onDocumentCreated(
         },
       };
 
-      const response = await admin.messaging().sendEachForMulticast(message);
+      const response = await getMessaging().sendEachForMulticast(message);
       console.log(`Space notification sent: ${response.successCount} success, ${response.failureCount} failed`);
       return response;
     } catch (error) {

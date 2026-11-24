@@ -1,5 +1,9 @@
 package com.invatech.pockit
 
+/*
+ * Regression tests for member balances and settlements after expense deletion and restoration.
+ */
+
 import com.invatech.pockit.ui.space.model.Member
 import com.invatech.pockit.ui.space.model.Space
 import com.invatech.pockit.ui.space.model.SpaceExpense

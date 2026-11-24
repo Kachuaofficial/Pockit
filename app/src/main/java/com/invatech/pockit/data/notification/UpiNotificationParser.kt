@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * Pure text heuristic for supported payment-app notifications.
+ * Rejects ambiguous/noisy text and returns a suggested income/expense record for review, not bank verification.
+ */
+
 import com.invatech.pockit.ui.home.model.WalletTransactionType
 import java.util.Locale
 import java.util.regex.Pattern
@@ -14,9 +19,9 @@ data class ParsedUpiTransaction(
 )
 
 /**
- * High-performance, on-device parser for Indian UPI & banking payment notifications.
- * Automatically classifies outgoing EXPENSE payments vs incoming INCOME payments.
- * 100% private & on-device: Rejects OTPs, personal chat messages, loans, requests, and non-genuine alerts.
+ * On-device text heuristics for supported Indian payment-app notifications.
+ * Suggests outgoing EXPENSE or incoming INCOME and rejects known noise/ambiguity.
+ * Parsing runs locally; accepted review records may later synchronize through the finance repository.
  */
 object UpiNotificationParser {
 
@@ -90,7 +95,9 @@ object UpiNotificationParser {
     fun isSupportedPackage(packageName: String): Boolean = SUPPORTED_PACKAGES.contains(packageName)
 
     /**
-     * Parses notification text and classifies it as EXPENSE, INCOME, or null (if non-genuine or noise).
+     * Classifies text only from supported packages. Rejects noise and ambiguous income/expense
+     * direction, then requires one unambiguous positive amount. Returns a candidate for user
+     * review or null; notification wording alone cannot prove a bank transaction.
      */
     fun parse(packageName: String, title: String?, text: String?, bigText: String?): ParsedUpiTransaction? {
         if (!isSupportedPackage(packageName)) return null
@@ -149,6 +156,11 @@ object UpiNotificationParser {
         }
     }
 
+    /**
+     * Collects distinct currency amounts with validated grouping/scale and requires exactly one
+     * value. A notification containing separate payment, balance or fee amounts is rejected rather
+     * than guessed.
+     */
     private fun extractAmountPaise(text: String): Long? {
         val matcher = AMOUNT_PATTERN.matcher(text)
         val amounts = mutableSetOf<Long>()

@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Android component and permission declarations. Activity, FCM service, notification listener and Glance receiver are framework entry points even when no Kotlin code calls their constructors. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
@@ -38,7 +40,7 @@
             </intent-filter>
         </service>
 
-        <!-- UPI Notification Listener Service for automatic expense detection -->
+        <!-- Optional payment notification listener: detected candidates go to review before wallet approval. -->
         <service
             android:name=".data.notification.UpiNotificationListenerService"
             android:label="@string/upi_notification_service_label"
@@ -61,7 +63,7 @@
         <!-- Google AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-5858375161867194~2066564513" />
+            android:value="${admobAppId}" />
 
         <!-- Pockit Home Screen Glance AppWidget -->
         <receiver

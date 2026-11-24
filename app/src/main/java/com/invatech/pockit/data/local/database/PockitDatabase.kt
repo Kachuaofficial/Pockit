@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.local.database
 
+/*
+ * Room database and DAO access for the main local cache, currently schema version 3.
+ * Chooses a UID-derived database filename and preserves the recorded owner of the pre-account-scoped legacy cache.
+ */
+
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
@@ -30,9 +35,10 @@ import com.invatech.pockit.data.local.entity.WalletTransactionEntity
         FriendTransactionEntity::class,
         NotificationEntity::class,
         SubscriptionEntity::class,
-        CategoryBudgetEntity::class
+        CategoryBudgetEntity::class,
+        com.invatech.pockit.data.local.entity.PendingWalletEntry::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)
@@ -44,10 +50,16 @@ abstract class PockitDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun subscriptionDao(): SubscriptionDao
     abstract fun budgetDao(): BudgetDao
+    abstract fun pendingWalletDao(): com.invatech.pockit.data.local.dao.PendingWalletDao
 
     companion object {
         private val instances = mutableMapOf<String, PockitDatabase>()
 
+        /**
+         * Returns the current account cache instance. A SHA-256 UID suffix separates database
+         * filenames; it is a naming choice, not database encryption. Only the recorded legacy
+         * owner continues using the original database filename.
+         */
         fun getDatabase(context: Context): PockitDatabase {
             val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "signed_out"
             val prefs = context.getSharedPreferences("pockit_database_owner", 0)
@@ -61,7 +73,7 @@ abstract class PockitDatabase : RoomDatabase() {
                     PockitDatabase::class.java,
                     name
                 )
-                    .addMigrations(PockitMigrations.FROM_1_TO_2, PockitMigrations.FROM_2_TO_3)
+                    .addMigrations(PockitMigrations.FROM_1_TO_2, PockitMigrations.FROM_2_TO_3, PockitMigrations.FROM_3_TO_4)
                     .build()
                 instances[name] = instance
                 instance

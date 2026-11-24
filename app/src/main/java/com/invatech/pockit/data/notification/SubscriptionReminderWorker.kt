@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * Periodic WorkManager task for due-subscription reminders.
+ * A due-date reminder records no automatic payment and can run later than an exact clock time.
+ */
+
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -27,16 +32,22 @@ class SubscriptionReminderWorker(
                 val amountRupees = sub.amountPaise / 100
 
                 if (daysUntil == 0) {
-                    NotificationHelper.showNotification(
+                    NotificationHelper.showAndStoreNotification(
                         context = applicationContext,
                         title = "🔔 Today: ${sub.title} Due!",
-                        body = "₹$amountRupees for ${sub.title} is due today via ${sub.paymentMethod}. Keep funds ready! 🐾"
+                        body = "₹$amountRupees for ${sub.title} is due today via ${sub.paymentMethod}. Keep funds ready!",
+                        type = "subscription",
+                        extraData = mapOf("navigate_to" to "planner"),
+                        stableId = "subscription_${sub.id}_today".hashCode()
                     )
                 } else if (daysUntil <= sub.reminderDaysBefore) {
-                    NotificationHelper.showNotification(
+                    NotificationHelper.showAndStoreNotification(
                         context = applicationContext,
                         title = "⏰ Upcoming: ${sub.title} in $daysUntil day${if (daysUntil > 1) "s" else ""}",
-                        body = "₹$amountRupees due on day ${sub.dueDayOfMonth}. Pockit reminds you early so you stay stress-free! ✨"
+                        body = "₹$amountRupees is due on day ${sub.dueDayOfMonth}. Plan ahead and stay stress-free.",
+                        type = "subscription",
+                        extraData = mapOf("navigate_to" to "planner"),
+                        stableId = "subscription_${sub.id}_$daysUntil".hashCode()
                     )
                 }
             }

@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.space.util
 
+/*
+ * Rupee-valued display adapter for legacy shared-space models.
+ * Uses the central Money helper to apply a consistent INR format at the presentation boundary.
+ */
+
 import java.text.NumberFormat
 import java.util.Locale
 

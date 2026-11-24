@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.finance
 
+/*
+ * Reusable headings, cards, monetary input and error notices for finance screens.
+ * Amount fields keep text editable; Money and the repository perform the authoritative financial checks.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.animateContentSize
@@ -65,9 +70,9 @@ fun FinanceCard(
                 scaleX = .98f + .02f * reveal.value
                 scaleY = .98f + .02f * reveal.value
             },
-        shape = RoundedCornerShape(30.dp),
-        border = BorderStroke(1.dp, if (color == MaterialTheme.colorScheme.surface) MaterialTheme.colorScheme.outlineVariant.copy(alpha = .6f) else Color.Transparent),
-        colors = CardDefaults.cardColors(containerColor = color)
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = color, contentColor = MaterialTheme.colorScheme.onSurface)
     ) {
         Column(
             Modifier.padding(20.dp),
@@ -91,8 +96,9 @@ fun AmountField(value: String, onChange: (String) -> Unit, label: String = "Amou
 
 @Composable
 fun ErrorNotice(message: String?) {
-    if (message != null) Text(
-        message,
+    val visible = com.invatech.pockit.ui.common.visibleError(message, com.invatech.pockit.ui.common.rememberOnline())
+    if (visible != null) Text(
+        visible,
         color = MaterialTheme.colorScheme.error,
         style = MaterialTheme.typography.bodyMedium
     )

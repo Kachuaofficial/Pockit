@@ -1,3 +1,10 @@
+/*
+ * Server authorization policy used when these rules are deployed.
+ * Client-side validation and hidden buttons are not substitutes for these allow conditions.
+ * The shared-space expense rule below currently accepts any signed-in user; it is broader
+ * than member-only access or recipient-only confirmation in the Android UI.
+ */
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -12,7 +19,7 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // 1. Users collection: each user has full control over their own profile and subcollections
+    // 1. Owner-scoped profile/private paths; each nested rule below defines its permitted operations.
     match /users/{userId} {
       // Allow authenticated users to read profiles (e.g. for friend search / display names)
       allow read: if isAuthenticated();
@@ -55,9 +62,30 @@ service cloud.firestore {
       }
     }
 
+    // Commerce documents are separate from client-writable finance/profile paths.
+    match /coinAccounts/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+      match /ledger/{entryId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+      match /entitlements/{feature} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+      match /rewardDays/{day} { allow read, write: if false; }
+    }
+    match /offlineSyncReceipts/{receipt} { allow read, write: if false; }
+    match /coinRewardSessions/{session} { allow read, write: if false; }
+    match /coinRewardReceipts/{receipt} { allow read, write: if false; }
+    match /commerceAccountLinks/{account} { allow read, write: if false; }
+    match /playSubscriptions/{token} { allow read, write: if false; }
+    match /commerceRateLimits/{userId} { allow read, write: if false; }
+
     // 2. Spaces collection: shared multiplayer group expense spaces
     match /spaces/{spaceId} {
-      // Space is readable and updatable only by members of the space
+      // Reads require membership; the update alternatives below also permit changes limited to membership fields.
       allow read: if isAuthenticated() && (request.auth.uid in resource.data.memberIds);
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (
@@ -67,7 +95,8 @@ service cloud.firestore {
       );
       allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
 
-      // Expenses within a space
+      // Current server boundary: any authenticated user can read/write nested expenses.
+      // Recipient/member guards in the client do not narrow this allow condition.
       match /expenses/{expenseId} {
         allow read, write: if isAuthenticated();
       }

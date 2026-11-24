@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.friends.model
 
+/*
+ * Friend QR payload, transaction directions/statuses and list models.
+ * Balance helpers interpret confirmed records from the current user perspective; QR contents identify a connection.
+ */
+
 import android.net.Uri
 import java.text.SimpleDateFormat
 import java.util.Date

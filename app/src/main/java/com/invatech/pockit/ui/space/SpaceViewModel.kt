@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.space
 
+/*
+ * Combines the space list with one expense observer per active space.
+ * Cancels observers for removed spaces and coordinates optimistic actions with rollback on supported failures.
+ */
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.invatech.pockit.data.repository.SpaceRepository
@@ -36,6 +41,11 @@ class SpaceViewModel(
         observeSpaces()
     }
 
+    /**
+     * Maintains one expense-collection job per available space, cancels jobs for removed spaces
+     * and merges current histories into the space list. Job ownership follows viewModelScope
+     * rather than individual cards.
+     */
     private fun observeSpaces() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -125,7 +135,8 @@ class SpaceViewModel(
     }
 
     /**
-     * Confirms a received settlement payment with optimistic UI update.
+     * Marks the receipt confirmed optimistically, then restores the previous history and reports
+     * the error if the repository rejects the update.
      */
     fun confirmSettlement(spaceId: String, expenseId: String, onError: (String) -> Unit = {}) {
         val currentExpenses = expensesBySpace[spaceId] ?: emptyList()

@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.repository
 
+/*
+ * Cloud-authoritative persistence for personal udhar, goals and UPI review records.
+ * Room supplies cached reads; tombstones and create-only imports avoid restoring deleted cloud entries.
+ */
+
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.invatech.pockit.PockitApplication
@@ -15,6 +20,11 @@ class FinanceRepository(private val owner: String) {
     private val migration = PockitApplication.instance.getSharedPreferences("finance_cloud_imports", 0)
     private fun records() = db.collection("users").document(owner).collection("financeRecords")
     private fun checkOwner() = check(owner.isNotBlank() && FirebaseAuth.getInstance().currentUser?.uid == owner) { "Please sign in again." }
+    /**
+     * Emits cached rows for this owner, imports previously unknown local IDs create-only, then
+     * listens for the cloud snapshot. Deleted rows remain tombstones in storage but are filtered
+     * out of the visible list. awaitClose detaches the cloud listener.
+     */
     fun observe(): Flow<List<FinanceRecord>> = flow {
         checkOwner()
         emit(listOf("UDHAR", "GOAL", "UPI").flatMap { dao.list(owner, it) }.filter { it.status != "DELETED" })
@@ -45,7 +55,13 @@ class FinanceRepository(private val owner: String) {
         }
             .map { rows -> rows.filter { it.status != "DELETED" }.sortedByDescending { it.occurredAt } })
     }
+    /**
+     * Checks owner identity before saving. Udhar events and their per-person aggregate are
+     * committed together, and repeated event IDs do not apply their signed effect twice. Deletion
+     * is a status tombstone so later local imports do not resurrect the event.
+     */
     suspend fun save(row: FinanceRecord) {
+        com.invatech.pockit.data.network.NetworkMonitor.requireOnline()
         checkOwner(); require(row.owner == owner)
         if (row.kind == "UDHAR") {
             val personId = java.security.MessageDigest.getInstance("SHA-256").digest(row.name.lowercase(java.util.Locale.ROOT).toByteArray()).joinToString("") { "%02x".format(it) }
@@ -74,7 +90,13 @@ class FinanceRepository(private val owner: String) {
         dao.insert(row); dao.update(row)
     }
     suspend fun status(row: FinanceRecord, status: String) = save(row.copy(status = status))
+    /**
+     * Adds positive paise to an existing goal in a cloud transaction and rejects an amount above
+     * the remaining target. In the current generic record schema, direction stores the saved
+     * contribution total as a decimal string.
+     */
     suspend fun contribute(row: FinanceRecord, amount: Long) {
+        com.invatech.pockit.data.network.NetworkMonitor.requireOnline()
         checkOwner(); require(amount > 0)
         val ref = records().document(row.id)
         db.runTransaction { tx ->

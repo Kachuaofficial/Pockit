@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.auth
 
+/*
+ * Requests a Google identity token through Android Credential Manager.
+ * Requires a foreground activity and configured web client ID; AuthRepository exchanges the token with Firebase.
+ */
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -14,6 +19,11 @@ import com.invatech.pockit.R
 class GoogleAuthClient(private val context: Context) {
     private val credentialManager = CredentialManager.create(context)
 
+    /**
+     * Unwraps a foreground Activity, requests a Google identity token for the configured web
+     * client, and rejects an unexpected credential type. The returned token is passed to Firebase
+     * sign-in; it is not a password.
+     */
     suspend fun signIn(): String {
         val activity = generateSequence(context) { (it as? ContextWrapper)?.baseContext }
             .filterIsInstance<Activity>().firstOrNull()

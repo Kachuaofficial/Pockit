@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.common.ads
 
+/*
+ * Lifecycle owner for bounded banner/native ad resources associated with a screen.
+ * Mounting protects visible ads from eviction; disposal, expiration and memory callbacks release idle SDK objects.
+ */
+
 import android.app.ActivityManager
 import android.content.ComponentCallbacks2
 import android.content.Context
@@ -28,7 +33,8 @@ internal fun rememberScreenAdSlots(): ScreenAdSlots {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val allowed by AdManager.adsReady.collectAsState()
-    val slots = remember(context, lifecycle, allowed) { ScreenAdSlots(context, lifecycle) }
+    val eligible=allowed
+    val slots = remember(context, lifecycle, eligible) { ScreenAdSlots(context, lifecycle) }
     DisposableEffect(slots) { onDispose { slots.close() } }
     return slots
 }
@@ -264,8 +270,9 @@ internal class NativeSlot(private val lifecycle: Lifecycle, private val unit: St
 /** Called only near the upcoming ad slot, never by a background worker or on unrelated pages. */
 @Composable
 fun PreloadPockitNativeAd(placementKey: String) {
+    val online = com.invatech.pockit.ui.common.rememberOnline()
     val ready by AdManager.adsReady.collectAsState()
-    if (!ready) return
+    if (!online || !ready || AdConfig.NATIVE_AD_UNIT_ID.isBlank()) return
     val slots = LocalScreenAdSlots.current ?: rememberScreenAdSlots()
     val slot = slots.native(placementKey, AdConfig.NATIVE_AD_UNIT_ID) ?: return
     LaunchedEffect(slot, slot.generation) { slot.ensureLoaded() }

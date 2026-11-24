@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.splash
 
+/*
+ * Animated launch presentation that waits for the authentication-check state before finishing.
+ * It selects no account permissions; MainActivity decides the next screen.
+ */
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -105,7 +110,7 @@ fun AnimatedSplashScreen(isCheckingAuth: Boolean, onSplashFinished: () -> Unit) 
                         ambientColor = Color(0x1F000000)
                     )
                     .clip(RoundedCornerShape(26.dp))
-                    .background(Color.White),
+                    .background(com.invatech.pockit.ui.theme.PockitElevated),
                 contentAlignment = Alignment.Center
             ) {
                 if (appIconBitmap != null) {

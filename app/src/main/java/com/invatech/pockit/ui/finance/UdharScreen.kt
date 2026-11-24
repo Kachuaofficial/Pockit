@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.finance
 
+/*
+ * Personal named-person udhar ledger, separate from QR-connected friend transactions.
+ * FinanceViewModel groups LENT, BORROWED, RECEIVED and REPAID entries into an outstanding position.
+ */
+
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
@@ -71,8 +76,8 @@ fun PersonalLedgerContent(vm: FinanceViewModel = viewModel()) {
                                 Text(name, style = MaterialTheme.typography.titleLarge, modifier = if (animations) Modifier.sharedElement(rememberSharedContentState("person_$name"), this@AnimatedContent) else Modifier)
                                 Text(if (balance > 0) "You'll receive ${Money.format(balance)}" else if (balance < 0) "You owe ${Money.format(-balance)}" else "Settled up")
                             }
-                            if (index == 7 && index < friendNames.lastIndex) {
-                                PockitNativeAdCard(placementKey = "UdharScreen.native.1", modifier = Modifier.padding(vertical = 4.dp))
+                            if (com.invatech.pockit.ui.common.ads.NativePlacementPolicy.afterRow(index, friendNames.size)) {
+                                PockitNativeAdCard(placementKey = "UdharScreen.native.$index", modifier = Modifier.padding(vertical = 4.dp))
                             }
                         }
                     }

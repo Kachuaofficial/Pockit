@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.entity
 
+/*
+ * Local cached connected-friend profile, including the friendship document identifier.
+ */
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.invatech.pockit.ui.friends.model.Friend

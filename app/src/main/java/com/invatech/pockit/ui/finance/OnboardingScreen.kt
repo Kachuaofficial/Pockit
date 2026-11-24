@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.finance
 
+/*
+ * First-run explanation pages with optional motion.
+ * Calls onComplete when finished; the host decides how to persist completion and display sign-in.
+ */
+
 import android.app.Activity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
@@ -40,15 +45,15 @@ import com.invatech.pockit.ui.common.motion.MotionSettings
 import kotlinx.coroutines.launch
 import kotlin.math.*
 
-private val OnboardingInk = Color(0xFF101714)
-private val OnboardingWhite = Color(0xFFF4F7EE)
-private val OnboardingMuted = Color(0xFF62665D)
+private val OnboardingInk = Color(0xFF493A48)
+private val OnboardingWhite = Color(0xFF493A48)
+private val OnboardingMuted = Color(0xFF756574)
 private data class IntroPage(val label: String, val title: String, val highlight: String, val description: String, val accent: Color)
 private val IntroPages = listOf(
-    IntroPage("THE BIG PICTURE", "Money, in", "full flow.", "From your first coffee to your next big plan. Give every rupee a place to belong.", Color(0xFFF1849C)),
-    IntroPage("MAKE IT HAPPEN", "Little savings.", "Big possibilities.", "A new laptop. That long-awaited trip. Build a budget that makes room for your life.", Color(0xFFC4B8F2)),
-    IntroPage("KEEP IT BETWEEN YOU", "Good friends.", "Clear balances.", "Lent a little? Borrowed some? Just add a name. Your friends don't need the app.", Color(0xFF91CAB7)),
-    IntroPage("YOU'RE IN CONTROL", "Less typing.", "More living.", "Let UPI payments come to you. Review the details, make a quick edit, and you're done.", Color(0xFFF8CC66))
+    IntroPage("THE BIG PICTURE", "Money, in", "full flow.", "From your first coffee to your next big plan. Give every rupee a place to belong.", Color(0xFFE95F76)),
+    IntroPage("MAKE IT HAPPEN", "Little savings.", "Big possibilities.", "A new laptop. That long-awaited trip. Build a budget that makes room for your life.", Color(0xFF8D73C9)),
+    IntroPage("KEEP IT BETWEEN YOU", "Good friends.", "Clear balances.", "Lent a little? Borrowed some? Just add a name. Your friends don't need the app.", Color(0xFF43A989)),
+    IntroPage("YOU'RE IN CONTROL", "Less typing.", "More living.", "Let UPI payments come to you. Review the details, make a quick edit, and you're done.", Color(0xFF5F9EDB))
 )
 
 /** Draw-only liquid motion: no bitmaps, blur, shaders, or per-frame layout work. */
@@ -71,19 +76,19 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         controller?.isAppearanceLightNavigationBars = true
         onDispose { controller?.isAppearanceLightStatusBars = statusWasLight; controller?.isAppearanceLightNavigationBars = navWasLight }
     }
-    Box(Modifier.fillMaxSize().background(Color(0xFFFFFBEF))) {
+    Box(Modifier.fillMaxSize().background(Color(0xFFFFFBF6))) {
         Canvas(Modifier.fillMaxSize()) {
             drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = .075f), Color.Transparent), Offset(size.width * .9f, size.height * .25f), size.width * .9f), radius = size.width * .9f, center = Offset(size.width * .9f, size.height * .25f))
-            drawLine(Color.White.copy(alpha = .035f), Offset(size.width * .12f, 0f), Offset(size.width * .12f, size.height), 1f)
-            drawLine(Color.White.copy(alpha = .035f), Offset(size.width * .88f, 0f), Offset(size.width * .88f, size.height), 1f)
+            drawLine(Color(0xFFF1DDE5), Offset(size.width * .12f, 0f), Offset(size.width * .12f, size.height), 1f)
+            drawLine(Color(0xFFF1DDE5), Offset(size.width * .88f, 0f), Offset(size.width * .88f, size.height), 1f)
         }
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 26.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                     Box(Modifier.size(29.dp).clip(RoundedCornerShape(9.dp)).background(accent), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.AccountBalanceWallet, null, Modifier.size(18.dp), tint = OnboardingInk)
+                        Icon(Icons.Rounded.AccountBalanceWallet, null, Modifier.size(18.dp), tint = com.invatech.pockit.ui.theme.PockitBackground)
                     }
-                    Text("pockit", color = OnboardingInk, fontSize = 26.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
+                    Text("Pockit", color = OnboardingInk, fontSize = 26.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
                 }
                 TextButton(onClick = onComplete, colors = ButtonDefaults.textButtonColors(contentColor = OnboardingMuted)) { Text("Skip") }
             }
@@ -109,7 +114,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         }
                         Spacer(Modifier.height(14.dp))
                         Text(page.title, color = OnboardingInk, fontSize = 39.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1.7).sp, lineHeight = 43.sp)
-                        Text(page.highlight, color = Color(0xFF286B5E), fontSize = if (index == 1) 35.sp else 39.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1.7).sp, lineHeight = 43.sp)
+                        Text(page.highlight, color = page.accent, fontSize = if (index == 1) 35.sp else 39.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1.7).sp, lineHeight = 43.sp)
                         Spacer(Modifier.height(15.dp))
                         Text(page.description, color = OnboardingMuted, fontSize = 15.sp, lineHeight = 23.sp)
                         Spacer(Modifier.height(16.dp))
@@ -121,7 +126,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         repeat(4) { index ->
                             val width by animateDpAsState(if (pager.currentPage == index) 30.dp else 7.dp, tween(if (motion) 300 else 0), label = "intro_dot")
-                            Box(Modifier.width(width).height(5.dp).clip(CircleShape).background(if (pager.currentPage == index) accent else Color(0xFF3C4941)))
+                            Box(Modifier.width(width).height(5.dp).clip(CircleShape).background(if (pager.currentPage == index) accent else Color(0xFFF1DDE5)))
                         }
                     }
                     Text("${pager.currentPage + 1} of 4", color = OnboardingMuted, fontSize = 12.sp)
@@ -131,7 +136,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         if (pager.currentPage == 3) onComplete()
                         else scope.launch { if (motion) pager.animateScrollToPage(pager.currentPage + 1, animationSpec = tween(650, easing = FastOutSlowInEasing)) else pager.scrollToPage(pager.currentPage + 1) }
                     }
-                }, modifier = Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = OnboardingInk)) {
+                }, modifier = Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = com.invatech.pockit.ui.theme.PockitBackground)) {
                     Text(if (pager.currentPage == 3) "Get started" else "Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, Modifier.size(21.dp))
                 }
@@ -153,7 +158,7 @@ private fun liquidPhase(enabled: Boolean): State<Float> {
 
 @Composable
 private fun LiquidArtwork(page: Int, accent: Color, phase: State<Float>, motion: Boolean, drag: Float) {
-    val artworkMuted = Color(0xFFB9C6BD)
+    val artworkMuted = Color(0xFFB6B6BF)
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val cardWidth = (maxWidth * .72f).coerceAtMost(265.dp)
         val artworkScale = (maxHeight.value / 310f).coerceIn(.6f, 1f)
@@ -177,7 +182,7 @@ private fun LiquidArtwork(page: Int, accent: Color, phase: State<Float>, motion:
                 }
                 close()
             }
-            drawPath(shape, Brush.linearGradient(listOf(accent, accent.copy(alpha = .60f), Color(0xFF285B43)), Offset(center.x - radius, center.y - radius), Offset(center.x + radius, center.y + radius)))
+            drawPath(shape, Brush.linearGradient(listOf(accent, accent.copy(alpha = .60f), Color(0xFF5E2B12)), Offset(center.x - radius, center.y - radius), Offset(center.x + radius, center.y + radius)))
             drawPath(shape, Brush.linearGradient(listOf(Color.White.copy(alpha = .5f), Color.Transparent, accent.copy(alpha = .35f))), style = Stroke(1.3.dp.toPx()))
             // Small satellite drops and orbit lines add depth without expensive blur layers.
             drawCircle(accent.copy(alpha = .8f), radius * .075f, Offset(center.x - radius * .95f, center.y + radius * .72f + sin(t) * 8))
@@ -192,7 +197,7 @@ private fun LiquidArtwork(page: Int, accent: Color, phase: State<Float>, motion:
             scaleY = artworkScale
             rotationZ = -9f + if (motion) sin(phase.value) * 2f else 0f
             translationY = if (motion) cos(phase.value) * 7.dp.toPx() else 0f
-        }, color = Color(0xFF18271F).copy(alpha = .96f), shape = RoundedCornerShape(25.dp), border = BorderStroke(1.dp, Color.White.copy(alpha = .22f)), shadowElevation = 16.dp) {
+        }, color = Color.White.copy(alpha = .96f), shape = RoundedCornerShape(25.dp), border = BorderStroke(1.dp, Color(0xFFF1DDE5)), shadowElevation = 8.dp) {
             Column(Modifier.padding(21.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(when(page) { 0 -> "YOUR POCKIT"; 1 -> "THE NEXT BIG THING"; 2 -> "YOUR INNER CIRCLE"; else -> "PAYMENT DETECTED" }, color = artworkMuted, fontSize = 8.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
@@ -216,7 +221,7 @@ private fun LiquidArtwork(page: Int, accent: Color, phase: State<Float>, motion:
                     }
                     2 -> {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("A", "R", "You").forEachIndexed { i, label -> Box(Modifier.size(38.dp).background(if (i == 2) accent else Color(0xFF35473D), CircleShape), contentAlignment = Alignment.Center) { Text(label, color = if (i == 2) OnboardingInk else OnboardingWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold) } }
+                            listOf("A", "R", "You").forEachIndexed { i, label -> Box(Modifier.size(38.dp).background(if (i == 2) accent else Color(0xFFECE3FF), CircleShape), contentAlignment = Alignment.Center) { Text(label, color = if (i == 2) Color.White else OnboardingWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold) } }
                         }
                         Text("All good. All clear.", color = OnboardingWhite, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                         Text("Rahul owes you", color = artworkMuted, fontSize = 11.sp)
@@ -238,12 +243,12 @@ private fun LiquidArtwork(page: Int, accent: Color, phase: State<Float>, motion:
             scaleY = artworkScale.coerceAtLeast(.8f)
             rotationZ = 5f
             translationY = if (motion) sin(phase.value + 1f) * -8.dp.toPx() else 0f
-        }, color = OnboardingWhite, shape = RoundedCornerShape(15.dp), shadowElevation = 8.dp) {
+        }, color = com.invatech.pockit.ui.theme.PockitElevated, shape = RoundedCornerShape(15.dp), shadowElevation = 8.dp) {
             Row(Modifier.padding(horizontal = 13.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(when(page) { 0 -> Icons.Rounded.TrendingUp; 1 -> Icons.Rounded.Savings; 2 -> Icons.Rounded.DoneAll; else -> Icons.Rounded.Lock }, null, Modifier.size(20.dp), tint = Color(0xFF38634B))
+                Icon(when(page) { 0 -> Icons.Rounded.TrendingUp; 1 -> Icons.Rounded.Savings; 2 -> Icons.Rounded.DoneAll; else -> Icons.Rounded.Lock }, null, Modifier.size(20.dp), tint = accent)
                 Column {
                     Text(when(page) { 0 -> "Looking good"; 1 -> "72% of the way"; 2 -> "No invites needed"; else -> "You get the final say" }, color = OnboardingInk, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text(when(page) { 0 -> "Your month, at a glance"; 1 -> "One step closer"; 2 -> "Just a name. That's it."; else -> "Always review first" }, color = Color(0xFF6C7970), fontSize = 9.sp)
+                    Text(when(page) { 0 -> "Your month, at a glance"; 1 -> "One step closer"; 2 -> "Just a name. That's it."; else -> "Always review first" }, color = Color(0xFFB6B6BF), fontSize = 9.sp)
                 }
             }
         }

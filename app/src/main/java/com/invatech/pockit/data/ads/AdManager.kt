@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.ads
 
+/*
+ * Consent-aware SDK readiness and ad failure reporting shared across screens.
+ * Readiness gates ad loading; it is separate from wallet and reward balances.
+ */
+
 import android.content.Context
 import android.util.Log
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
@@ -14,7 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Session initialization only: Pockit serves banner and native ads, never fullscreen ads. */
+/** Consent-gated initialization; reward interstitials are shown only after an explicit offer. */
 object AdManager {
     private val ready = MutableStateFlow(false)
     val adsReady = ready.asStateFlow()

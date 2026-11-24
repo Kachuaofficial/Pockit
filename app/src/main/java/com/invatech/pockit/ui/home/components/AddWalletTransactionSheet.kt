@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.home.components
 
+/*
+ * Income/expense entry form with category selection and optional receipt OCR suggestions. Converts reviewed text with Money before calling onSave.
+ */
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -40,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +73,11 @@ import com.invatech.pockit.ui.theme.InkMuted
 import com.invatech.pockit.ui.theme.Mint
 import com.invatech.pockit.ui.theme.Peach
 
+/**
+ * Owns editable transaction text, type and category while the sheet is open. Receipt OCR can
+ * pre-fill suggestions; Money parses the reviewed amount into paise before onSave. The parent
+ * decides when a successful save dismisses the sheet.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWalletTransactionSheet(
@@ -100,11 +110,16 @@ fun AddWalletTransactionSheet(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var isScanning by remember { mutableStateOf(false) }
+    val rewardVersion by com.invatech.pockit.data.ads.RewardedFeatureAccess.updates.collectAsState()
+    val receiptUnlocked = remember(rewardVersion) {
+        com.invatech.pockit.data.ads.RewardedFeatureAccess.isUnlocked(com.invatech.pockit.data.ads.RewardedFeature.RECEIPT_SCAN)
+    }
+    var showScanUnlock by remember { mutableStateOf(false) }
 
     val receiptLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        if (uri != null) {
+        if (uri != null && com.invatech.pockit.data.ads.RewardedFeatureAccess.isUnlocked(com.invatech.pockit.data.ads.RewardedFeature.RECEIPT_SCAN)) {
             coroutineScope.launch {
                 isScanning = true
                 val result = ReceiptScannerManager.scanReceipt(context, uri).getOrNull()
@@ -203,7 +218,8 @@ fun AddWalletTransactionSheet(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .clickable(enabled = !isScanning) {
-                            receiptLauncher.launch("image/*")
+                            if(receiptUnlocked) receiptLauncher.launch("image/*")
+                            else showScanUnlock=true
                         },
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f),
                     shape = RoundedCornerShape(16.dp)
@@ -232,7 +248,7 @@ fun AddWalletTransactionSheet(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (isScanning) "Reading receipt with ML Kit..." else "Scan Bill or Receipt (AI OCR)",
+                                text = if (isScanning) "Reading receipt…" else "Scan Bill or Receipt",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -355,6 +371,8 @@ fun AddWalletTransactionSheet(
             )
         }
     }
+    if(showScanUnlock) com.invatech.pockit.ui.commerce.RewardedFeatureDialog(
+        com.invatech.pockit.data.ads.RewardedFeature.RECEIPT_SCAN,{showScanUnlock=false})
 }
 
 @Composable

@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.dao
 
+/*
+ * Local space and space-expense queries/inserts used by SpaceRepository caching.
+ */
+
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy

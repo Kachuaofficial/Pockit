@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.home.model
 
+/*
+ * Category labels, icons and tints used by transaction entry and receipt suggestions.
+ * Saved wallet events are defined separately in WalletTransaction.kt.
+ */
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Cake
@@ -46,31 +51,3 @@ enum class Category(
     Bills("Bills", Icons.Rounded.ReceiptLong, PastelYellow),
     Other("Other", Icons.Rounded.Category, PastelPeach)
 }
-
-data class Transaction(
-    val id: Long,
-    val title: String,
-    val category: Category,
-    val amount: Double,
-    val isExpense: Boolean,
-    val dateLabel: String,
-    val stringId: String = "",
-    val timeLabel: String = "",
-    val dateKey: String = "",
-    val dateMonthDay: String = "",
-    val dayOfWeek: String = ""
-)
-
-data class DaySpending(
-    val label: String,
-    val amount: Float
-)
-
-data class DateGroupedTransactions(
-    val dateKey: String,
-    val dateMonthDay: String,
-    val dayOfWeek: String,
-    val netIncome: Double,
-    val netExpense: Double,
-    val transactions: List<Transaction>
-)

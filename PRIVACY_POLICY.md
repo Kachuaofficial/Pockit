@@ -1,13 +1,19 @@
 # Privacy Policy for Pockit
 
 **Effective Date:** October 31, 2026  
-**Last Updated:** October 31, 2026  
+**Last Updated:** November 24, 2026  
 
 Welcome to **Pockit** ("we", "our", or "us"), an Android application developed by **InvaTech**. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our mobile application **Pockit** (Package Name: `com.invatech.pockit`).
 
 By installing or using Pockit, you agree to the collection and use of information in accordance with this Privacy Policy. If you do not agree with the terms of this policy, please do not use the application.
 
 ---
+
+## Advertising, rewarded access and app verification
+
+Pockit is supported by banner, native and optional rewarded ads. It does not sell Pro subscriptions or virtual coins. Reward videos are shown only after you select a clearly labelled offer. Completing one stores the named feature's 24-hour expiry locally on your device.
+
+Google AdMob may process ad and device identifiers needed to deliver, measure and protect advertising. Firebase App Check and Google Play Integrity verify authentic app requests. Receipt images continue to be processed on the device by ML Kit. Rewarded feature access does not change the handling of your financial wallet records.
 
 ## 1. Information We Collect
 
@@ -117,3 +123,8 @@ If you have questions, suggestions, or concerns regarding this Privacy Policy or
 When you enable notification access, Android makes notifications available to Pockit. Pockit checks the originating app against its supported UPI-app list before extracting payment details. You can disable each supported app or turn tracking off in Settings. Parsing happens on the device; raw notification text is not retained. Structured detected payment details sync to your Firebase account in a private review inbox and do not affect your wallet until approved. Approved wallet entries use the existing Firebase account sync.
 
 Name-only udhar records, savings goals, pocket-money plans, notification history/read state and user preferences sync to Firestore under your signed-in account. Local databases retain cached data and may hold payment drafts waiting for a connection. Unsynced changes can be lost if app data is cleared. Name-only records are not shared with the named friend. Device permissions and biometric enrollment stay device-specific. Reminder timing uses activity within Pockit, not activity in other apps. Financial notification text is not sent to advertising providers.
+
+
+## Offline entries and synchronization
+
+New expense and income entries recorded offline remain in an account-scoped local queue on the device. When the user reconnects, pending entries sync automatically to their Firebase account. The server stores an account-linked sync receipt to prevent duplicate writes. Entries remain local until the server accepts the batch. Clearing app data or uninstalling before sync removes unsynced entries.

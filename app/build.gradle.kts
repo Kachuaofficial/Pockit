@@ -1,3 +1,8 @@
+/*
+ * Android app build configuration: SDK support, variants, signing, dependencies and generated Room schemas.
+ * Build settings do not grant runtime permissions or deploy Firebase rules/functions.
+ */
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -15,8 +20,8 @@ android {
         applicationId = "com.invatech.pockit"
         minSdk = 24
         targetSdk = 37
-        versionCode = 8
-        versionName = "2.0"
+        versionCode = 12
+        versionName = "2.3"
 
         testInstrumentationRunner = if (providers.gradleProperty("releaseSmoke").orNull == "true") {
             "com.invatech.pockit.ReleaseSmokeInstrumentation"
@@ -38,7 +43,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Use the registered Pockit app in internal/debug builds as well. Developers
+            // must register their handset as an AdMob test device to avoid invalid traffic.
+            manifestPlaceholders["admobAppId"] = "ca-app-pub-5858375161867194~8387330202"
+        }
         release {
+            manifestPlaceholders["admobAppId"] = "ca-app-pub-5858375161867194~8387330202"
             isMinifyEnabled = true
             isShrinkResources = true
             ndk {
@@ -88,6 +99,9 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.messaging)
+    implementation("com.google.firebase:firebase-functions:23.0.0")
+    implementation("com.google.firebase:firebase-appcheck-playintegrity:20.1.0")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug:20.1.0")
     implementation(libs.googleid)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

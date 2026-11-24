@@ -1,4 +1,8 @@
 package com.invatech.pockit.domain
+
+/*
+ * Unit tests for exact paise parsing, monetary boundaries and deterministic split allocation.
+ */
 import org.junit.Assert.*
 import org.junit.Test
 

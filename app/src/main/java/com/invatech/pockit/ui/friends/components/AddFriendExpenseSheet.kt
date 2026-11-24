@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.friends.components
 
+/*
+ * Collects a connected friend, direction, amount and description before reporting a requested record to its parent.
+ */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll

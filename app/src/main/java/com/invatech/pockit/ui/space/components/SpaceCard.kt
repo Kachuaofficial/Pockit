@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Space-list item showing identity and the current-user position calculated for the supplied space.
+ */
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -71,9 +75,9 @@ fun SpaceCard(
 
     val badgeBackground by animateColorAsState(
         targetValue = when {
-            myBalance > 0.5 -> Color.White
-            myBalance < -0.5 -> Color.White.copy(alpha = 0.9f)
-            else -> Color.White.copy(alpha = 0.75f)
+            myBalance > 0.5 -> com.invatech.pockit.ui.theme.PockitElevated
+            myBalance < -0.5 -> com.invatech.pockit.ui.theme.PockitElevated
+            else -> com.invatech.pockit.ui.theme.PockitElevated
         },
         animationSpec = M3Spring.fastEffects(),
         label = "status_badge_color"
@@ -97,7 +101,7 @@ fun SpaceCard(
                 modifier = Modifier
                     .size(54.dp)
                     .clip(CircleShape)
-                    .background(Color.White),
+                    .background(com.invatech.pockit.ui.theme.PockitElevated),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = space.emoji, style = MaterialTheme.typography.headlineMedium)
@@ -125,13 +129,13 @@ fun SpaceCard(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Ink),
+                    .background(com.invatech.pockit.ui.theme.PockitOrange),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Rounded.ChevronRight,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = com.invatech.pockit.ui.theme.PockitBackground,
                     modifier = Modifier.size(22.dp)
                 )
             }

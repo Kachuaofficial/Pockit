@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.auth
 
+/*
+ * Compose instrumentation checks for sign-in screen layout/interaction states.
+ */
+
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.graphics.asAndroidBitmap

@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.dao
 
+/*
+ * Local recurring-expense queries, active filtering and cloud snapshot replacement.
+ */
+
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy

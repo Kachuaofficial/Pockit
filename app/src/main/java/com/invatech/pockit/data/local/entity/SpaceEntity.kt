@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.entity
 
+/*
+ * Local cached space metadata. Members and space type are reconstructed through the model/converter layer.
+ */
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.invatech.pockit.ui.space.model.Member

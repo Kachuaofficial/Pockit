@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.entity
 
+/*
+ * Local recurring-expense definition with paise amount, billing cycle, due date and reminder preferences.
+ */
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 

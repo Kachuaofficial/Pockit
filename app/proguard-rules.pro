@@ -1,3 +1,5 @@
+# Release shrinker/obfuscation rules. Keep requirements must reflect reflection or SDK entry points, not unused source references.
+
 # App-specific reflection contracts. SDKs supply their own consumer R8 rules.
 # Keep optimization and resource shrinking enabled in the release build.
 

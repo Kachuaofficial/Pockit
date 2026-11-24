@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Displays the supplied member balance summary; calculation belongs to BalanceCalculator and its caller.
+ */
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -60,8 +64,8 @@ fun BalanceSummaryCard(
     // Dynamic accent color morphing
     val accent by animateColorAsState(
         targetValue = when {
-            isOwed -> Mint
-            owes -> Rose
+            isOwed -> com.invatech.pockit.ui.theme.PockitGreen
+            owes -> com.invatech.pockit.ui.theme.ExpenseRed
             else -> Color.White
         },
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
@@ -81,7 +85,7 @@ fun BalanceSummaryCard(
     }
 
     Surface(
-        color = Ink,
+        color = com.invatech.pockit.ui.theme.PockitSurface,
         shape = RoundedCornerShape(30.dp),
         modifier = modifier.fillMaxWidth()
     ) {
@@ -122,7 +126,7 @@ fun BalanceSummaryCard(
                         else -> Icons.Rounded.Check
                     },
                     contentDescription = null,
-                    tint = Ink
+                    tint = com.invatech.pockit.ui.theme.PockitBackground
                 )
             }
         }

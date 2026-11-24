@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.home
 
+/*
+ * Observable dashboard state combining Room history, the recorded balance and cloud refresh callbacks.
+ * Coordinates retries and optimistic record changes; errors restore the previous visible state where supported.
+ */
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
@@ -31,27 +36,37 @@ class HomeViewModel(
     private val walletRepository: WalletRepository = WalletRepository()
 ) : ViewModel() {
 
+    // Pair of input fingerprint and request ID. Keeping it after a failed save allows the same form to retry safely.
     private var pendingAddRequest: Pair<String, String>? = null
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private var cloudListeners = emptyList<com.google.firebase.firestore.ListenerRegistration>()
-    override fun onCleared() { cloudListeners.forEach { it.remove() }; super.onCleared() }
+    override fun onCleared() {
+        cloudListeners.forEach { it.remove() }; super.onCleared()
+    }
+
     init {
         cloudListeners = walletRepository.watchCloud(onTransactionsChanged = {
             viewModelScope.launch {
-                try { walletRepository.getTransactions() }
-                catch (e: Exception) { _uiState.value = _uiState.value.copy(errorMessage = e.message) }
+                try {
+                    walletRepository.getTransactions()
+                } catch (e: Exception) {
+                    _uiState.value = _uiState.value.copy(errorMessage = e.message)
+                }
             }
         }, onError = { _uiState.value = _uiState.value.copy(errorMessage = it) })
-        viewModelScope.launch { walletRepository.observeBalance().collect { balance -> _uiState.value = _uiState.value.copy(balancePaise = balance) } }
+        viewModelScope.launch {
+            walletRepository.observeBalance()
+                .collect { balance -> _uiState.value = _uiState.value.copy(balancePaise = balance) }
+        }
         observeLocalTransactions()
         loadWallet()
     }
 
     /**
-     * Observes Room database continuously so any local additions, edits, or syncs
-     * update the UI instantaneously with zero network latency.
+     * Maps Room emissions into HomeTransactionUi so an accepted local insert, edit or snapshot
+     * replacement refreshes the visible history without a screen-level network fetch.
      */
     private fun observeLocalTransactions() {
         viewModelScope.launch {
@@ -67,19 +82,21 @@ class HomeViewModel(
                                 category = transaction.category,
                                 createdAt = transaction.createdAt
                             )
-                        },
-                        isInitialLoad = false
+                        }, isInitialLoad = false
                     )
                 }
             }
         }
     }
 
+    /**
+     * Refreshes recorded balance and history while exposing loading/error state. A failed refresh
+     * ends loading and leaves previously available screen data intact.
+     */
     fun loadWallet() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                errorMessage = null
+                isLoading = true, errorMessage = null
             )
 
             try {
@@ -87,7 +104,7 @@ class HomeViewModel(
                 val transactions = walletRepository.getTransactions()
 
                 _uiState.value = HomeUiState(
-                    balancePaise = walletRepository.observeBalance().value,
+                    balancePaise = walletRepository.currentBalance(),
                     transactions = transactions.map { transaction ->
                         HomeTransactionUi(
                             id = transaction.id,
@@ -113,9 +130,7 @@ class HomeViewModel(
     }
 
     fun addIncome(
-        title: String,
-        amountPaise: Long,
-        category: String = "Income"
+        title: String, amountPaise: Long, category: String = "Income"
     ) {
         addTransaction(
             title = title,
@@ -126,9 +141,7 @@ class HomeViewModel(
     }
 
     fun addExpense(
-        title: String,
-        amountPaise: Long,
-        category: String = "Other"
+        title: String, amountPaise: Long, category: String = "Other"
     ) {
         addTransaction(
             title = title,
@@ -138,22 +151,25 @@ class HomeViewModel(
         )
     }
 
+    /**
+     * Reuses an in-memory request ID for an identical pending entry after a failed attempt. The
+     * repository uses this ID for idempotency; after success the pending ID is cleared and the
+     * accepted event is merged into UI state. This pending fingerprint is not durable across
+     * process death.
+     */
     private fun addTransaction(
-        title: String,
-        amountPaise: Long,
-        type: WalletTransactionType,
-        category: String
+        title: String, amountPaise: Long, type: WalletTransactionType, category: String
     ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                errorMessage = null
+                isLoading = true, errorMessage = null
             )
 
             try {
                 val fingerprint = "$title|$amountPaise|$type|$category"
                 val request = pendingAddRequest?.takeIf { it.first == fingerprint }
-                    ?: (fingerprint to java.util.UUID.randomUUID().toString()).also { pendingAddRequest = it }
+                    ?: (fingerprint to java.util.UUID.randomUUID()
+                        .toString()).also { pendingAddRequest = it }
                 val (newBalance, txId) = walletRepository.addTransaction(
                     title = title,
                     amountPaise = amountPaise,
@@ -180,14 +196,16 @@ class HomeViewModel(
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message
-                        ?: "Transaction save nahi ho paya."
+                    isLoading = false, errorMessage = e.message ?: "Transaction save nahi ho paya."
                 )
             }
         }
     }
 
+    /**
+     * Captures the currently displayed balance as an expected value and asks the repository for a
+     * checked adjustment. Calls onSaved only after the server operation completes.
+     */
     fun editBalance(value: Long, onSaved: () -> Unit) {
         val expected = _uiState.value.balancePaise
         if (_uiState.value.isLoading) return
@@ -208,15 +226,15 @@ class HomeViewModel(
     }
 
     /**
-     * Deletes a transaction and refunds or reverts wallet balance with optimistic UI update.
+     * Removes the row optimistically for immediate feedback, then requests the atomic server
+     * delete. Restores the previous list and balance if the request fails.
      */
     fun deleteTransaction(transactionId: String) {
         val previousTransactions = _uiState.value.transactions
         val previousBalance = _uiState.value.balancePaise
         // Optimistic UI update
         _uiState.value = _uiState.value.copy(
-            transactions = previousTransactions.filter { it.id != transactionId }
-        )
+            transactions = previousTransactions.filter { it.id != transactionId })
 
         viewModelScope.launch {
             try {
@@ -234,7 +252,8 @@ class HomeViewModel(
     }
 
     /**
-     * Restores a deleted transaction and re-applies wallet balance with optimistic UI update.
+     * Restores the row optimistically for Undo and asks the repository to restore its original ID
+     * and balance effect. Rolls back the visible restoration if persistence fails.
      */
     fun restoreTransaction(transaction: HomeTransactionUi) {
         val previousTransactions = _uiState.value.transactions
@@ -266,7 +285,8 @@ class HomeViewModel(
     }
 
     /**
-     * Updates an existing transaction with optimistic UI update.
+     * Shows the edited row while saving. On failure, restores the previous list and balance so a
+     * rejected edit is not left looking accepted.
      */
     fun updateTransaction(
         transactionId: String,
@@ -290,8 +310,7 @@ class HomeViewModel(
                         category = category
                     )
                 } else tx
-            }
-        )
+            })
 
         viewModelScope.launch {
             try {

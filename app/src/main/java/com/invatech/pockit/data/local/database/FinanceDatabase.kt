@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.local.database
 
+/*
+ * Separate Room database for owner/kind-scoped finance records.
+ * The same row type stores udhar, goals and pending UPI items, so direction/status must be interpreted with kind.
+ */
+
 import android.content.Context
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow

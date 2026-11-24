@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.common
 
+/*
+ * Shared user avatar presentation. Resolves a profile image when available and uses a name-based fallback.
+ */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape

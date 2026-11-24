@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.common.swipe
 
+/*
+ * Reusable swipe-to-delete presentation with optional confirmation and collapse animation.
+ * Calls the parent action after the relevant gesture/animation; the parent owns persistence and undo.
+ */
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -124,7 +129,7 @@ fun SwipeToDeleteContainer(
             enableDismissFromEndToStart = enabled,
             backgroundContent = {
                 val backgroundColor by animateColorAsState(
-                    targetValue = if (willDismiss) ErrorRed else ErrorRed.copy(alpha = 0.82f),
+                    targetValue = if (willDismiss) com.invatech.pockit.ui.theme.ErrorSoft else com.invatech.pockit.ui.theme.ErrorSoft.copy(alpha = 0.82f),
                     animationSpec = M3Spring.fastEffects(),
                     label = "swipe_delete_bg"
                 )
@@ -150,7 +155,7 @@ fun SwipeToDeleteContainer(
                     ) {
                         Text(
                             text = "Delete",
-                            color = Color.White,
+                            color = ErrorRed,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
@@ -158,13 +163,13 @@ fun SwipeToDeleteContainer(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.22f)),
+                                .background(ErrorRed.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = if (willDismiss) Icons.Rounded.Delete else Icons.Rounded.DeleteOutline,
                                 contentDescription = "Delete",
-                                tint = Color.White,
+                                tint = ErrorRed,
                                 modifier = Modifier.size(20.dp)
                             )
                         }

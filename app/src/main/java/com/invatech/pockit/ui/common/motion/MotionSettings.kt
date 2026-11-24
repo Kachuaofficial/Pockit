@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.common.motion
 
+/*
+ * Observable animation preference combined with the system animator duration scale.
+ * The activity refreshes the system value on resume and the UI observes the resulting state.
+ */
+
 import android.content.Context
 import android.provider.Settings
 import kotlinx.coroutines.flow.MutableStateFlow

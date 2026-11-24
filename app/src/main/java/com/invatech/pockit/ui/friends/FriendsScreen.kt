@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.friends
 
+/*
+ * Friends area combining the personal ledger and connected-friend views.
+ * Coordinates QR/manual connection, expense forms, search and friend-detail navigation.
+ */
+
 import android.widget.Toast
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
@@ -22,9 +27,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.QrCode2
@@ -52,8 +55,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.invatech.pockit.ui.common.ads.PockitBannerAd
 import com.invatech.pockit.ui.common.ads.PockitNativeAdCard
-import com.invatech.pockit.ui.common.mascot.MascotPose
-import com.invatech.pockit.ui.common.mascot.PockitMascot
 import com.invatech.pockit.ui.common.motion.M3NavMotion
 import com.invatech.pockit.ui.friends.components.AddFriendExpenseSheet
 import com.invatech.pockit.ui.friends.components.FriendItemCard
@@ -73,74 +74,198 @@ import kotlinx.coroutines.CancellationException
 
 @Composable
 fun FriendsScreen(modifier: Modifier = Modifier) {
-    var selectedTab by rememberSaveable { mutableStateOf(FriendsTabType.PERSONAL) }
     val financeVm: com.invatech.pockit.ui.finance.FinanceViewModel = viewModel()
     val friendsVm: FriendsViewModel = viewModel()
-
     val personalRecords by financeVm.ledger.collectAsState()
-    val connectedFriendsList by friendsVm.connectedFriends.collectAsState()
-
-    val personalPersonsCount = remember(personalRecords) {
-        personalRecords.map { it.name }.distinct().size
+    val connectedFriends by friendsVm.friendsWithBalances.collectAsState()
+    val personalGroups = remember(personalRecords) { personalRecords.groupBy { it.name } }
+    val personalBalances = remember(personalGroups) {
+        personalGroups.mapValues { com.invatech.pockit.ui.finance.udharBalance(it.value) }
     }
-    val connectedFriendsCount = connectedFriendsList.size
+    var showAddOptions by rememberSaveable { mutableStateOf(false) }
+    var showMyQr by rememberSaveable { mutableStateOf(false) }
+    var showScanQr by rememberSaveable { mutableStateOf(false) }
+    var showPersonalEntry by rememberSaveable { mutableStateOf(false) }
+    var selectedPersonalName by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedConnectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var showConnectedExpense by rememberSaveable { mutableStateOf(false) }
+    var expenseDirection by remember { mutableStateOf(ExpenseDirection.GAVE_UDHAR) }
 
-    // Expressive Predictive Back Handling at the tab level:
-    // If the user is on Connected Friends tab (and no detail modal is active),
-    // pressing/swiping back returns smoothly to the primary Personal Udhar tab!
-    PredictiveBackHandler(enabled = selectedTab == FriendsTabType.CONNECTED) { progress ->
-        try {
-            progress.collect { /* tracking continuous swipe */ }
-            selectedTab = FriendsTabType.PERSONAL
-        } catch (_: CancellationException) {
-        }
+    val selectedConnected = remember(connectedFriends, selectedConnectedId) {
+        connectedFriends.find { it.friend.id == selectedConnectedId }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        // Expressive Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    Box(modifier.fillMaxSize()) {
+        UnifiedFriendsOverview(
+            personalBalances = personalBalances,
+            connectedFriends = connectedFriends,
+            onPersonalClick = { selectedPersonalName = it },
+            onConnectedClick = { selectedConnectedId = it },
+            onAddFriend = { showAddOptions = true }
+        )
+
+        AnimatedVisibility(
+            visible = selectedConnected != null,
+            enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+            exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
         ) {
-            Column {
-                Text(
-                    text = "Friends",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Keep your money matters clear.",
-                    fontSize = 12.5.sp,
-                    color = InkMuted
+            selectedConnected?.let { detail ->
+                FriendDetailScreen(
+                    friendWithBalance = detail,
+                    currentUserId = friendsVm.myUserId,
+                    onDismiss = { selectedConnectedId = null },
+                    onAddExpense = { direction ->
+                        expenseDirection = direction
+                        showConnectedExpense = true
+                    },
+                    onSettleUp = { friendsVm.settleBalance(detail.friend.id) },
+                    onConfirmTransaction = friendsVm::confirmTransaction,
+                    onRejectTransaction = friendsVm::rejectTransaction,
+                    onDeleteTransaction = friendsVm::deleteTransaction,
+                    onRemoveFriend = {
+                        friendsVm.removeFriend(detail.friend.id, detail.friend.friendshipId)
+                        selectedConnectedId = null
+                    }
                 )
             }
         }
+    }
 
-        // Custom Expressive Segmented TabLayout
-        FriendsExpressiveTabLayout(
-            selectedTab = selectedTab,
-            onTabSelected = { selectedTab = it },
-            personalCount = personalPersonsCount,
-            connectedCount = connectedFriendsCount
+    if (showAddOptions) FriendAddOptionsSheet(
+        onDismiss = { showAddOptions = false },
+        onAddPersonal = { showAddOptions = false; selectedPersonalName = null; showPersonalEntry = true },
+        onScanFriend = { showAddOptions = false; showScanQr = true },
+        onShareCode = { showAddOptions = false; showMyQr = true }
+    )
+    selectedPersonalName?.let { name ->
+        PersonalFriendSheet(
+            name = name,
+            records = personalGroups[name].orEmpty(),
+            balance = personalBalances[name] ?: 0L,
+            busy = financeVm.busy.collectAsState().value,
+            onDismiss = { selectedPersonalName = null },
+            onAddEntry = { showPersonalEntry = true },
+            onDelete = financeVm::deleteEntry
         )
+    }
+    if (showPersonalEntry) RecordUdharDialog(
+        initialName = selectedPersonalName.orEmpty(),
+        busy = financeVm.busy.collectAsState().value,
+        error = financeVm.error.collectAsState().value,
+        onDismiss = { showPersonalEntry = false },
+        onSave = { name, amount, direction, note ->
+            financeVm.addUdhar(name, amount, direction, note) { showPersonalEntry = false }
+        }
+    )
+    if (showMyQr) MyQrCodeSheet(
+        qrContent = friendsVm.myQrPayload,
+        userName = friendsVm.myUserName,
+        userEmail = friendsVm.myUserEmail,
+        onDismiss = { showMyQr = false }
+    )
+    if (showScanQr) ScanFriendQrSheet(
+        onDismiss = { showScanQr = false },
+        onCodeScanned = friendsVm::connectFriendViaBarcode,
+        onManualConnect = friendsVm::connectFriendViaManualInput
+    )
+    if (showConnectedExpense && selectedConnected != null) AddFriendExpenseSheet(
+        friends = connectedFriends.map { it.friend },
+        initialFriendId = selectedConnected.friend.id,
+        initialDirection = expenseDirection,
+        onDismiss = { showConnectedExpense = false },
+        onSaveExpense = friendsVm::addExpense
+    )
+}
 
-        // Fluid Animated Tab Screen Content
-        AnimatedContent(
-            targetState = selectedTab,
-            transitionSpec = {
-                val isForward = targetState == FriendsTabType.CONNECTED
-                M3NavMotion.directionalTabTransition(isForward = isForward)
-            },
-            label = "friends_screen_tab_content",
-            modifier = Modifier.weight(1f)
-        ) { tab ->
-            when (tab) {
-                FriendsTabType.PERSONAL -> com.invatech.pockit.ui.finance.PersonalLedgerContent(vm = financeVm)
-                FriendsTabType.CONNECTED -> ConnectedFriendsContent(viewModel = friendsVm)
+@Composable
+private fun LegacyUnifiedFriendsOverview(
+    personalBalances: Map<String, Long>,
+    connectedFriends: List<FriendWithBalance>,
+    onOpenPersonal: () -> Unit,
+    onOpenConnected: () -> Unit
+) {
+    RecordDoodleBackdrop(Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Friends", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        "Connected friends and personal records, together.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    com.invatech.pockit.ui.finance.FinanceCard(
+                        modifier = Modifier.weight(1f).clickable(onClick = onOpenPersonal),
+                        color = com.invatech.pockit.ui.theme.PastelPeach
+                    ) {
+                        Text("Personal udhar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("${personalBalances.size} contacts", style = MaterialTheme.typography.bodySmall)
+                        Text("Add or manage", style = MaterialTheme.typography.labelLarge, color = com.invatech.pockit.ui.theme.PockitOrangeDeep)
+                    }
+                    com.invatech.pockit.ui.finance.FinanceCard(
+                        modifier = Modifier.weight(1f).clickable(onClick = onOpenConnected),
+                        color = com.invatech.pockit.ui.theme.PastelMint
+                    ) {
+                        Text("Connected", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("${connectedFriends.size} friends", style = MaterialTheme.typography.bodySmall)
+                        Text("Connect or split", style = MaterialTheme.typography.labelLarge, color = com.invatech.pockit.ui.theme.PockitGreen)
+                    }
+                }
+            }
+            item {
+                Text("Personal contacts", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            }
+            if (personalBalances.isEmpty()) {
+                item {
+                    com.invatech.pockit.ui.finance.FinanceCard(Modifier.clickable(onClick = onOpenPersonal)) {
+                        Text("No personal udhar yet", style = MaterialTheme.typography.titleMedium)
+                        Text("Add someone by name—no Pockit connection required.")
+                    }
+                }
+            } else {
+                itemsIndexed(personalBalances.entries.toList(), key = { _, item -> item.key }) { _, item ->
+                    com.invatech.pockit.ui.finance.FinanceCard(Modifier.clickable(onClick = onOpenPersonal)) {
+                        Text(item.key, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            when {
+                                item.value > 0 -> "You'll receive ${com.invatech.pockit.domain.Money.format(item.value)}"
+                                item.value < 0 -> "You owe ${com.invatech.pockit.domain.Money.format(-item.value)}"
+                                else -> "Settled up"
+                            },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            item {
+                Text("Connected friends", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            }
+            if (connectedFriends.isEmpty()) {
+                item {
+                    com.invatech.pockit.ui.finance.FinanceCard(Modifier.clickable(onClick = onOpenConnected)) {
+                        Text("No connected friends yet", style = MaterialTheme.typography.titleMedium)
+                        Text("Scan a friend's code or share yours to start splitting together.")
+                    }
+                }
+            } else {
+                itemsIndexed(connectedFriends, key = { _, item -> item.friend.id }) { _, item ->
+                    FriendItemCard(
+                        friendWithBalance = item,
+                        onClick = onOpenConnected,
+                        modifier = Modifier.animateItem()
+                    )
+                }
+            }
+            if (personalBalances.isNotEmpty() || connectedFriends.isNotEmpty()) {
+                item { PockitBannerAd(placementKey = "FriendsScreen.unified.banner") }
             }
         }
     }
@@ -230,10 +355,7 @@ fun ConnectedFriendsContent(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                PockitMascot(
-                                    pose = MascotPose.HAPPY_WAVING,
-                                    size = 96.dp
-                                )
+
                                 Text(
                                     text = if (searchQuery.isNotBlank()) "No friends match '$searchQuery'" else "No friends connected yet",
                                     fontSize = 17.sp,
@@ -280,7 +402,7 @@ fun ConnectedFriendsContent(
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(16.dp))
-                                            .background(Ink)
+                                            .background(com.invatech.pockit.ui.theme.PockitOrange)
                                             .clickable { showScanQrSheet = true }
                                             .padding(horizontal = 16.dp, vertical = 10.dp)
                                     ) {
@@ -291,14 +413,14 @@ fun ConnectedFriendsContent(
                                             Icon(
                                                 imageVector = Icons.Rounded.QrCodeScanner,
                                                 contentDescription = null,
-                                                tint = Mint,
+                                                tint = com.invatech.pockit.ui.theme.PockitBackground,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             Text(
                                                 text = "Scan Friend",
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.White
+                                                color = com.invatech.pockit.ui.theme.PockitBackground
                                             )
                                         }
                                     }
@@ -314,8 +436,8 @@ fun ConnectedFriendsContent(
                                 onClick = { selectedFriendForDetail = item },
                                 modifier = Modifier.animateItem()
                             )
-                            if (index == 7 && index < friendsList.lastIndex) {
-                                PockitNativeAdCard(placementKey = "FriendsScreen.native.1", modifier = Modifier.padding(vertical = 4.dp))
+                            if (com.invatech.pockit.ui.common.ads.NativePlacementPolicy.afterRow(index, friendsList.size)) {
+                                PockitNativeAdCard(placementKey = "FriendsScreen.native.$index", modifier = Modifier.padding(vertical = 4.dp))
                             }
                         }
                     }

@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.friends.components
 
+/*
+ * Switches between personal-ledger and connected-friend content and explains the selected area.
+ */
+
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.snap

@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.home.model
 
+/*
+ * Personal ledger event and income/expense type shared by repositories and UI mapping.
+ * amountPaise is a Long; formatted currency belongs to the display layer.
+ */
+
 
 import com.google.firebase.Timestamp
 

@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.entity
 
+/*
+ * Local personal-wallet event with Long paise. Mapping helpers preserve identifiers and timestamp meaning across Room/domain models.
+ */
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.firebase.Timestamp

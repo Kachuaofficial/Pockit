@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.friends
 
+/*
+ * Combines friend identities, transactions, search and filters into screen state.
+ * Delegates cloud changes to FriendRepository and supplies the direction/status used by confirmation actions.
+ */
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.invatech.pockit.data.repository.FriendRepository
@@ -54,8 +59,7 @@ class FriendsViewModel(
 
     // Realtime connected friends (Firestore + local)
     val connectedFriends: StateFlow<List<Friend>> = combine(
-        repository.observeFriends(),
-        _localFriends
+        repository.observeFriends(), _localFriends
     ) { remote, local ->
         (remote + local).distinctBy { it.id }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -72,16 +76,19 @@ class FriendsViewModel(
         _selectedFilter
     ) { friends, transactions, query, filter ->
         val list = friends.map { friend ->
-            val friendTxs = transactions.filter { it.friendId == friend.id }
-                .sortedByDescending { it.timestamp }
+            val friendTxs =
+                transactions.filter { it.friendId == friend.id }.sortedByDescending { it.timestamp }
             FriendWithBalance(friend = friend, transactions = friendTxs)
         }
 
         list.filter { item ->
-            val matchesQuery = query.isBlank() ||
-                    item.friend.name.contains(query, ignoreCase = true) ||
-                    item.friend.email.contains(query, ignoreCase = true) ||
-                    item.friend.phone.contains(query, ignoreCase = true)
+            val matchesQuery = query.isBlank() || item.friend.name.contains(
+                query,
+                ignoreCase = true
+            ) || item.friend.email.contains(query, ignoreCase = true) || item.friend.phone.contains(
+                query,
+                ignoreCase = true
+            )
 
             val matchesFilter = when (filter) {
                 FriendsFilter.ALL -> true
@@ -98,9 +105,10 @@ class FriendsViewModel(
         list.map { it.netBalance }.filter { it > 0 }.sum()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val totalYoullGive: StateFlow<Double> = friendsWithBalances.combine(_selectedFilter) { list, _ ->
-        list.map { it.netBalance }.filter { it < 0 }.map { kotlin.math.abs(it) }.sum()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    val totalYoullGive: StateFlow<Double> =
+        friendsWithBalances.combine(_selectedFilter) { list, _ ->
+            list.map { it.netBalance }.filter { it < 0 }.map { kotlin.math.abs(it) }.sum()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
@@ -130,7 +138,9 @@ class FriendsViewModel(
     }
 
     /**
-     * Connect manually using a friend code or email.
+     * Accepts a Pockit payload directly. Other text currently becomes a derived placeholder user
+     * ID and synthetic payload rather than a verified directory lookup by email. The QR-based
+     * connection method handles the resulting payload.
      */
     fun connectFriendViaManualInput(input: String) {
         viewModelScope.launch {
@@ -195,7 +205,8 @@ class FriendsViewModel(
                 creatorId = myUid,
                 status = TransactionStatus.CONFIRMED
             )
-            _localTransactions.value = listOf(newTx) + _localTransactions.value.filterNot { it.id == txId }
+            _localTransactions.value =
+                listOf(newTx) + _localTransactions.value.filterNot { it.id == txId }
             _toastEvent.emit("Udhar transaction recorded!")
         }
     }
@@ -207,7 +218,8 @@ class FriendsViewModel(
      */
     fun settleBalance(friendId: String) {
         viewModelScope.launch {
-            val friendWithBalance = friendsWithBalances.value.find { it.friend.id == friendId } ?: return@launch
+            val friendWithBalance =
+                friendsWithBalances.value.find { it.friend.id == friendId } ?: return@launch
             val currentBalance = friendWithBalance.netBalance
 
             if (kotlin.math.abs(currentBalance) < 0.01) {
@@ -246,7 +258,8 @@ class FriendsViewModel(
                 creatorId = myUid,
                 status = TransactionStatus.PENDING
             )
-            _localTransactions.value = listOf(settleTx) + _localTransactions.value.filterNot { it.id == txId }
+            _localTransactions.value =
+                listOf(settleTx) + _localTransactions.value.filterNot { it.id == txId }
             _toastEvent.emit("Settlement requested! Waiting for ${friendWithBalance.friend.name} to confirm.")
         }
     }
@@ -256,7 +269,8 @@ class FriendsViewModel(
      */
     fun confirmTransaction(transactionId: String) {
         viewModelScope.launch {
-            val result = repository.updateTransactionStatus(transactionId, TransactionStatus.CONFIRMED)
+            val result =
+                repository.updateTransactionStatus(transactionId, TransactionStatus.CONFIRMED)
             if (result.isSuccess) {
                 _localTransactions.value = _localTransactions.value.map {
                     if (it.id == transactionId) it.copy(status = TransactionStatus.CONFIRMED) else it
@@ -273,7 +287,8 @@ class FriendsViewModel(
      */
     fun rejectTransaction(transactionId: String) {
         viewModelScope.launch {
-            val result = repository.updateTransactionStatus(transactionId, TransactionStatus.REJECTED)
+            val result =
+                repository.updateTransactionStatus(transactionId, TransactionStatus.REJECTED)
             if (result.isSuccess) {
                 _localTransactions.value = _localTransactions.value.map {
                     if (it.id == transactionId) it.copy(status = TransactionStatus.REJECTED) else it

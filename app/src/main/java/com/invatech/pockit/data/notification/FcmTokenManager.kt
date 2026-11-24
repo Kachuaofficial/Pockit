@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * Associates the current device messaging token with the signed-in profile.
+ * A token is a delivery address and can rotate; it is not an account password.
+ */
+
 import android.os.Build
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth

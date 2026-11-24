@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.repository
 
+/*
+ * Owner-scoped notification inbox with Room-backed reads and cloud mutations.
+ * Notification read/delete state is separate from the financial event that an alert describes.
+ */
+
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.invatech.pockit.PockitApplication
@@ -14,6 +19,11 @@ class NotificationRepository {
     private val db = FirebaseFirestore.getInstance()
     private fun collection() = db.collection("users").document(owner ?: error("Please sign in again.")).collection("notifications")
     private fun checkOwner() = check(owner != null && FirebaseAuth.getInstance().currentUser?.uid == owner) { "Please sign in again." }
+    /**
+     * Emits the local inbox first, create-only imports cached IDs, then streams cloud rows and
+     * replaces the local snapshot. deleted=true documents are excluded from display but retained
+     * remotely so imports do not recreate removed messages. Cancellation removes the listener.
+     */
     fun observeNotifications(): Flow<List<NotificationEntity>> = flow {
         checkOwner()
         val local = dao.observeNotifications().first()

@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.finance
 
+/*
+ * Review queue for payment notifications detected on the device.
+ * The user can correct and approve an entry or reject it before it affects the personal wallet.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items

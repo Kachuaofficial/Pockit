@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.friends.util
 
+/*
+ * Wrapper around the Google code-scanner UI.
+ * Returns scan content or failure through callbacks; decoding and connecting a friend happen in the next layer.
+ */
+
 import android.content.Context
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions

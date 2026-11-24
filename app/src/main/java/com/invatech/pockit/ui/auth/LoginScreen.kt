@@ -1,16 +1,18 @@
 package com.invatech.pockit.ui.auth
 
-import androidx.compose.animation.AnimatedVisibility
+/*
+ * Google sign-in interface with loading/error feedback and links to the legal documents.
+ * Obtains the Google token through GoogleAuthClient, then delegates Firebase sign-in to AuthViewModel.
+ */
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -32,19 +34,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.CloudDone
-import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.Group
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.PieChart
-import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -56,12 +50,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,7 +62,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -85,14 +76,11 @@ import com.invatech.pockit.data.auth.GoogleAuthClient
 import com.invatech.pockit.ui.common.legal.LegalBottomSheet
 import com.invatech.pockit.ui.common.legal.LegalDocType
 import com.invatech.pockit.ui.common.motion.MotionSettings
-import com.invatech.pockit.ui.theme.CocoaEspresso
 import com.invatech.pockit.ui.theme.CocoaSoft
 import com.invatech.pockit.ui.theme.PastelLilac
 import com.invatech.pockit.ui.theme.PastelMint
 import com.invatech.pockit.ui.theme.PastelPeach
-import com.invatech.pockit.ui.theme.PastelSky
 import com.invatech.pockit.ui.theme.PockitCharcoal
-import com.invatech.pockit.ui.theme.PockitCoral
 import com.invatech.pockit.ui.theme.WarmCream
 import kotlinx.coroutines.launch
 
@@ -159,13 +147,13 @@ internal fun LoginContent(
         Column(Modifier.fillMaxSize().padding(horizontal = 28.dp).padding(top = if (compact) 16.dp else 28.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (appIcon != null) Image(appIcon, null, Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)))
-                else Icon(Icons.Rounded.AccountBalanceWallet, null, Modifier.size(32.dp), tint = PockitCharcoal)
-                Text("pockit", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp, color = PockitCharcoal)
+                else Icon(Icons.Rounded.AccountBalanceWallet, null, Modifier.size(32.dp), tint = com.invatech.pockit.ui.theme.PockitOrange)
+                Text("Pockit", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp, color = com.invatech.pockit.ui.theme.PockitText)
             }
             Spacer(Modifier.height(if (compact) 24.dp else 40.dp))
             Text("Money sorted.\nLife, a little lighter.", fontSize = if (compact) 32.sp else 40.sp,
                 lineHeight = if (compact) 37.sp else 45.sp, letterSpacing = (-1.5).sp,
-                fontWeight = FontWeight.ExtraBold, color = PockitCharcoal)
+                fontWeight = FontWeight.ExtraBold, color = com.invatech.pockit.ui.theme.PockitText)
             Spacer(Modifier.height(12.dp))
             Text("Track your spending, split with friends,\nand make room for your next big plan.",
                 style = MaterialTheme.typography.bodyMedium, color = CocoaSoft)
@@ -183,10 +171,10 @@ internal fun LoginContent(
             Button(onClick = onSignIn, enabled = !loading,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
                 shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PockitCharcoal, contentColor = WarmCream,
-                    disabledContainerColor = PockitCharcoal.copy(alpha = .8f), disabledContentColor = WarmCream),
+                colors = ButtonDefaults.buttonColors(containerColor = com.invatech.pockit.ui.theme.PockitOrange, contentColor = WarmCream,
+                    disabledContainerColor = PockitCharcoal.copy(alpha = .8f), disabledContentColor = com.invatech.pockit.ui.theme.PockitMutedText),
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 16.dp)) {
-                if (loading) CircularProgressIndicator(Modifier.size(20.dp), color = WarmCream, strokeWidth = 2.dp)
+                if (loading) CircularProgressIndicator(Modifier.size(20.dp), color = com.invatech.pockit.ui.theme.PockitMutedText, strokeWidth = 2.dp)
                 else Surface(color = Color.White, shape = CircleShape) {
                     Icon(painterResource(R.drawable.ic_google_logo), null, Modifier.padding(5.dp).size(20.dp), tint = Color.Unspecified)
                 }
@@ -205,43 +193,6 @@ internal fun LoginContent(
                 Text("·", color = CocoaSoft)
                 TextButton(onClick = onPrivacy) { Text("Privacy Policy", color = CocoaSoft) }
             }
-        }
-    }
-}
-
-@Composable
-private fun AuthFeaturePill(
-    icon: ImageVector,
-    label: String,
-    bgColor: Color,
-    accentColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        color = bgColor,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.15f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = accentColor,
-                modifier = Modifier.size(15.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.Bold,
-                color = CocoaEspresso,
-                maxLines = 1
-            )
         }
     }
 }
@@ -297,7 +248,7 @@ private fun LoginArtwork() {
                     spotColor = Color(0x28000000),
                     ambientColor = Color(0x12000000)
                 ),
-            color = Color(0xFF235A4F), // Deep Emerald Teal
+            color = Color(0xFF19191E), // Deep Emerald Teal
             shape = RoundedCornerShape(28.dp)
         ) {
             Column(
@@ -311,7 +262,7 @@ private fun LoginArtwork() {
                 ) {
                     Text(
                         text = "MONTHLY PLAN",
-                        color = Color(0xFFC8E5D8),
+                        color = Color(0xFFB6B6BF),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.5.sp
@@ -319,7 +270,7 @@ private fun LoginArtwork() {
                     Row(
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(Color(0xFF163E36))
+                            .background(Color(0xFF2D2119))
                             .padding(horizontal = 8.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp)
@@ -328,13 +279,13 @@ private fun LoginArtwork() {
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF55D399))
+                                .background(Color(0xFFFF850F))
                         )
                         Text(
                             text = "On track",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFFE6F5EE)
+                            color = Color(0xFFFFB454)
                         )
                     }
                 }
@@ -342,14 +293,14 @@ private fun LoginArtwork() {
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
                         text = "₹24,850",
-                        color = Color(0xFFFFFBEF),
+                        color = com.invatech.pockit.ui.theme.PockitText,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = (-1).sp
                     )
                     Text(
                         text = "Safe to spend · 8 days remaining",
-                        color = Color(0xFFBFDCD0),
+                        color = Color(0xFFB6B6BF),
                         fontSize = 12.5.sp
                     )
                 }
@@ -368,7 +319,7 @@ private fun LoginArtwork() {
                                 .weight(1f)
                                 .height(h.dp)
                                 .background(
-                                    if (isLast) Color(0xFFFFB672) else Color(0xFF6AC5AC).copy(alpha = 0.85f),
+                                    if (isLast) Color(0xFFFFB672) else Color(0xFFFF850F).copy(alpha = 0.85f),
                                     RoundedCornerShape(4.dp)
                                 )
                         )
@@ -393,7 +344,7 @@ private fun LoginArtwork() {
                 ),
             color = PastelLilac,
             shape = RoundedCornerShape(18.dp),
-            border = BorderStroke(1.dp, Color(0xFFE4CCE8))
+            border = BorderStroke(1.dp, Color(0xFF333338))
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -404,13 +355,13 @@ private fun LoginArtwork() {
                     imageVector = Icons.Rounded.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = Color(0xFF6B4C85)
+                    tint = Color(0xFFFFB454)
                 )
                 Text(
                     text = "Chai with team · ₹40 split",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF38234B)
+                    color = Color(0xFFF5F5F7)
                 )
             }
         }

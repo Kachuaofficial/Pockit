@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.repository
 
+/*
+ * Synchronizes account choices to the preferences document and applies remote updates locally.
+ * The applying guard prevents feedback loops; OS permissions and biometric enrollment remain device-specific.
+ */
+
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -17,6 +22,11 @@ object AccountPreferences {
         FirebaseFirestore.getInstance().collection("users").document(uid).collection("settings").document("preferences")
             .set(mapOf(key to value), SetOptions.merge()).addOnFailureListener { error.value = "Preferences couldn't sync: ${it.message}" }
     }
+    /**
+     * Applies remote account preferences through local managers. The applying flag suppresses echo
+     * writes while a snapshot is being applied; the caller owns and removes the returned listener
+     * registration.
+     */
     fun bind(context: Context, uid: String): com.google.firebase.firestore.ListenerRegistration {
         val ref = FirebaseFirestore.getInstance().collection("users").document(uid).collection("settings").document("preferences")
         return ref.addSnapshotListener { snapshot, failure ->

@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.dao
 
+/*
+ * Local friend and friend-event queries/inserts used by FriendRepository caching.
+ */
+
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy

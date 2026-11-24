@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * Schedules and evaluates optional engagement reminders using account-related activity/preferences.
+ * Frequency controls notification prompts, not financial calculations.
+ */
+
 import android.content.Context
 import androidx.work.*
 import com.google.firebase.auth.FirebaseAuth
@@ -19,8 +24,12 @@ object PockitEngagementNotificationManager {
         prefs(context).edit().putBoolean("enabled", enabled).apply()
         if (enabled) schedule(context) else WorkManager.getInstance(context).cancelUniqueWork(WORK)
     }
-    fun frequency(context: Context) = prefs(context).getInt("frequency", 2)
-    fun setFrequency(context: Context, value: Int) { com.invatech.pockit.data.repository.AccountPreferences.write("frequency", value.coerceIn(1, 3)); prefs(context).edit().putInt("frequency", value.coerceIn(1, 3)).apply() }
+    fun frequency(context: Context) = prefs(context).getInt("frequency", 6).coerceIn(1, 6)
+    fun setFrequency(context: Context, value: Int) {
+        val safeValue = value.coerceIn(1, 6)
+        com.invatech.pockit.data.repository.AccountPreferences.write("frequency", safeValue)
+        prefs(context).edit().putInt("frequency", safeValue).apply()
+    }
     fun recordAppUse(context: Context) {
         val p = prefs(context)
         val now = System.currentTimeMillis()
@@ -33,7 +42,7 @@ object PockitEngagementNotificationManager {
     }
     private fun schedule(context: Context) {
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(WORK, ExistingPeriodicWorkPolicy.UPDATE,
-            PeriodicWorkRequestBuilder<PockitEngagementWorker>(3, TimeUnit.HOURS)
+            PeriodicWorkRequestBuilder<PockitEngagementWorker>(150, TimeUnit.MINUTES)
                 .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build()).build())
     }
     private fun dayKey(): String = Calendar.getInstance().let { "${it.get(Calendar.YEAR)}-${it.get(Calendar.DAY_OF_YEAR)}" }
@@ -45,29 +54,35 @@ object PockitEngagementNotificationManager {
         val minute = c.get(Calendar.HOUR_OF_DAY) * 60 + c.get(Calendar.MINUTE)
         if (minute < 510 || minute >= 1320) return
         val p = prefs(context)
-        val sinceOpen = now - p.getLong("last_open", 0)
-        if (sinceOpen < 2 * 60 * 60_000 || sinceOpen > 7 * 86400_000L) return
         val today = dayKey()
         val sent = if (p.getString("sent_day", "") == today) p.getInt("sent_count", 0) else 0
-        val active = p.getString("open_day", "") == today && p.getInt("opens", 0) >= 3
-        val cap = if (active) frequency(context) else 1
-        val cooldown = if (active) 4 * 60 * 60_000L else 24 * 60 * 60_000L
+        val cap = frequency(context)
+        val cooldown = 2 * 60 * 60_000L
         if (sent >= cap || now - p.getLong("last_sent", 0) < cooldown) return
         val pending = FinanceDatabase.get(context).records().list(uid, "UPI").count { it.status == "PENDING" }
-        val latest = PockitApplication.instance.database.walletDao().getTransactions(1).firstOrNull()
-        val title: String
-        val body: String
-        val route: String
-        if (pending > 0) {
-            title = "Payments waiting for your review"
-            body = "$pending detected payments are ready. Approve only the entries you want to track."
-            route = "upi_review"
-        } else if (minute >= 1080 && (latest == null || now - latest.createdAtMillis > 12 * 60 * 60_000L)) {
-            title = "A quick money check-in"
-            body = "Any spending to record today? Keep your budget up to date in a few taps."
-            route = "home"
-        } else return
-        NotificationHelper.showNotification(context, title, body, mapOf("navigate_to" to route))
+        val prompts = listOf(
+            Triple("Record today's spending", "A ten-second check-in keeps your wallet and monthly totals accurate.", "home"),
+            Triple("See where your money went", "Open Insights for a quick category and spending-trend check.", "insights"),
+            Triple("Stay close to your budget", "Review this month's limits before the next purchase.", "budgets"),
+            Triple("Keep udhar clear", "Check Friends for pending balances, repayments, and shared expenses.", "friends"),
+            Triple("Plan the next money move", "Use Planner to prepare for upcoming expenses and goals.", "planner"),
+            Triple("Review your wallet", "Open Pockit and make sure today's income and expenses are complete.", "all_transactions")
+        )
+        val (title, body, route) = if (pending > 0 && sent % 2 == 0) {
+            Triple(
+                "Payments waiting for review",
+                "$pending detected payment${if (pending == 1) " is" else "s are"} ready. Approve only what you want to track.",
+                "upi_review"
+            )
+        } else prompts[sent % prompts.size]
+        NotificationHelper.showAndStoreNotification(
+            context = context,
+            title = title,
+            body = body,
+            type = "engagement",
+            extraData = mapOf("navigate_to" to route),
+            stableId = "engagement_${today}_$sent".hashCode()
+        )
         p.edit().putString("sent_day", today).putInt("sent_count", sent + 1).putLong("last_sent", now).apply()
     }
 }

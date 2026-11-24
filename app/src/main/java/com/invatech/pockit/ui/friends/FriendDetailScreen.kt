@@ -1,7 +1,12 @@
 package com.invatech.pockit.ui.friends
 
+/*
+ * Connected-friend transaction history and acknowledgement actions.
+ * Shows the current-user interpretation of direction and pending/confirmed/rejected records.
+ */
+
 import android.content.Intent
-import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,7 +55,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -59,8 +68,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.invatech.pockit.ui.common.ads.PockitNativeAdCard
-import com.invatech.pockit.ui.common.mascot.MascotPose
-import com.invatech.pockit.ui.common.mascot.PockitMascot
 import com.invatech.pockit.ui.common.motion.ExpressivePredictiveBackContainer
 import com.invatech.pockit.ui.friends.model.ExpenseDirection
 import com.invatech.pockit.ui.friends.model.FriendTransaction
@@ -74,7 +81,6 @@ import com.invatech.pockit.ui.theme.ErrorRed
 import com.invatech.pockit.ui.theme.InkMuted
 import com.invatech.pockit.ui.theme.MintContainerDark
 import com.invatech.pockit.ui.theme.MintDark
-import com.invatech.pockit.ui.theme.MintDeep
 import com.invatech.pockit.ui.theme.PeachContainerDark
 import com.invatech.pockit.ui.theme.PeachDark
 import kotlin.math.abs
@@ -202,11 +208,6 @@ fun FriendDetailScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        // Cute mascot peeking from the top bar!
-                        PockitMascot(
-                            pose = MascotPose.COZY_PEEK,
-                            size = 42.dp
-                        )
 
                         // Share reminder button
                         IconButton(
@@ -541,10 +542,7 @@ fun FriendDetailScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                PockitMascot(
-                                    pose = MascotPose.SLEEPING,
-                                    size = 72.dp
-                                )
+
                                 Text(
                                     text = "No transactions with ${friend.name} yet.\nTap 'Lent' or 'Borrowed' to record.",
                                     fontSize = 13.sp,
@@ -563,8 +561,8 @@ fun FriendDetailScreen(
                                 onReject = { onRejectTransaction(tx.id) },
                                 onDelete = { onDeleteTransaction(tx.id) }
                             )
-                            if (index == 7 && index < txs.lastIndex) {
-                                PockitNativeAdCard(placementKey = "FriendDetailScreen.native.1", modifier = Modifier.padding(vertical = 4.dp))
+                            if (com.invatech.pockit.ui.common.ads.NativePlacementPolicy.afterRow(index, txs.size)) {
+                                PockitNativeAdCard(placementKey = "FriendDetailScreen.native.$index", modifier = Modifier.padding(vertical = 4.dp))
                             }
                         }
                     }
@@ -603,48 +601,52 @@ private fun LedgerItemRow(
         }
     }
 
-    // Cheerful pastel color schemes consistent with Home TransactionItem & RecordDoodleUi
+    // Light pastel themes keep the ledger readable while matching the unified Friends screen.
     val (cardBg, avatarBg, iconTint, amountColor) = remember(tx.direction, tx.status) {
         when {
             tx.status == TransactionStatus.REJECTED -> Tuple4(
-                Color(0xFFFFF1F1),
-                ErrorRed.copy(alpha = 0.15f),
-                ErrorRed,
-                InkMuted
+                Color(0xFFFFF8FA), Color(0xFFFFE5EC), Color(0xFFBE4969), Color(0xFF8B6C76)
             )
             tx.direction == ExpenseDirection.GAVE_UDHAR -> Tuple4(
-                Color(0xFFDFF5E0), // Soft Mint
-                Color(0xFF9EDDA5),
-                Color(0xFF1E562B),
-                Color(0xFF2E7D42)
+                Color(0xFFF6FFFB), Color(0xFFDDF8EC), Color(0xFF07966A), Color(0xFF07966A)
             )
             tx.direction == ExpenseDirection.TOOK_UDHAR -> Tuple4(
-                Color(0xFFFFDDD3), // Soft Coral/Blush
-                Color(0xFFFFA690),
-                Color(0xFF6B2D1E),
-                Color(0xFFB33A24)
+                Color(0xFFFFFAF7), Color(0xFFFFE7D5), Color(0xFFF28A2F), Color(0xFFE8466E)
             )
             tx.direction == ExpenseDirection.SETTLE_UP -> Tuple4(
-                Color(0xFFEDE6FB), // Soft Lavender
-                Color(0xFFC9B8F3),
-                Color(0xFF43306B),
-                Color(0xFF5B458A)
+                Color(0xFFF7FFFB), Color(0xFFDDF8EC), Color(0xFF07966A), Color(0xFF07966A)
             )
             else -> Tuple4(
-                Color(0xFFEDE6FB),
-                Color(0xFFC9B8F3),
-                Color(0xFF43306B),
-                Color(0xFF5B458A)
+                Color(0xFFFCF9FF), Color(0xFFEFE3FF), Color(0xFF7543AD), Color(0xFF7543AD)
             )
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = cardBg
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(24.dp))
+            .background(Brush.horizontalGradient(listOf(Color.White, cardBg)))
     ) {
-        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+        Canvas(Modifier.matchParentSize()) {
+            val back = Path().apply {
+                moveTo(size.width * .48f, size.height)
+                cubicTo(size.width * .64f, size.height * .62f, size.width * .79f, size.height * .94f, size.width, size.height * .48f)
+                lineTo(size.width, size.height)
+                close()
+            }
+            val front = Path().apply {
+                moveTo(size.width * .66f, size.height)
+                cubicTo(size.width * .78f, size.height * .74f, size.width * .90f, size.height * .98f, size.width, size.height * .68f)
+                lineTo(size.width, size.height)
+                close()
+            }
+            drawPath(back, iconTint.copy(alpha = .08f))
+            drawPath(front, iconTint.copy(alpha = .14f))
+            drawCircle(iconTint.copy(alpha = .07f), size.minDimension * .28f, Offset(size.width * .93f, size.height * .15f))
+        }
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -657,8 +659,8 @@ private fun LedgerItemRow(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(15.dp))
                             .background(avatarBg),
                         contentAlignment = Alignment.Center
                     ) {
@@ -672,7 +674,7 @@ private fun LedgerItemRow(
                             },
                             contentDescription = null,
                             tint = iconTint,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
 
@@ -687,8 +689,8 @@ private fun LedgerItemRow(
                             Text(
                                 text = cleanTitle,
                                 style = MaterialTheme.typography.titleMedium.copy(
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.ExtraBold
                                 ),
                                 color = CocoaEspresso,
                                 maxLines = 1,
@@ -701,24 +703,24 @@ private fun LedgerItemRow(
                                 TransactionStatus.PENDING -> {
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(Color(0xFFFFB27A).copy(alpha = 0.35f))
-                                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                                            .clip(RoundedCornerShape(9.dp))
+                                            .background(Color(0xFFFFE6C8))
+                                            .padding(horizontal = 7.dp, vertical = 3.dp)
                                     ) {
                                         Text(
                                             text = "Pending",
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF8A3B14)
+                                            color = Color(0xFFB86A10)
                                         )
                                     }
                                 }
                                 TransactionStatus.REJECTED -> {
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
+                                            .clip(RoundedCornerShape(9.dp))
                                             .background(ErrorRed.copy(alpha = 0.15f))
-                                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                                            .padding(horizontal = 7.dp, vertical = 3.dp)
                                     ) {
                                         Text(
                                             text = "Rejected",
@@ -732,15 +734,15 @@ private fun LedgerItemRow(
                                     if (tx.direction == ExpenseDirection.SETTLE_UP) {
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(6.dp))
-                                                .background(Color(0xFF9EDDA5).copy(alpha = 0.45f))
-                                                .padding(horizontal = 5.dp, vertical = 1.dp)
+                                                .clip(RoundedCornerShape(9.dp))
+                                                .background(Color(0xFFDDF8EC))
+                                                .padding(horizontal = 7.dp, vertical = 3.dp)
                                         ) {
                                             Text(
                                                 text = "Settled ✓",
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF1E562B)
+                                                color = Color(0xFF087D59)
                                             )
                                         }
                                     }
@@ -751,7 +753,7 @@ private fun LedgerItemRow(
                         Text(
                             text = tx.formattedDate,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                            color = CocoaMuted,
+                            color = Color(0xFF786C7B),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -762,27 +764,37 @@ private fun LedgerItemRow(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = when {
-                            tx.status == TransactionStatus.REJECTED -> formatMoney(abs(tx.amount))
-                            tx.direction == ExpenseDirection.GAVE_UDHAR -> "+${formatMoney(tx.amount)}"
-                            tx.direction == ExpenseDirection.TOOK_UDHAR -> "-${formatMoney(tx.amount)}"
-                            else -> formatMoney(abs(tx.amount))
-                        },
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = amountColor
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(13.dp))
+                            .background(amountColor.copy(alpha = .10f))
+                            .padding(horizontal = 9.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = when {
+                                tx.status == TransactionStatus.REJECTED -> formatMoney(abs(tx.amount))
+                                tx.direction == ExpenseDirection.GAVE_UDHAR -> "+${formatMoney(tx.amount)}"
+                                tx.direction == ExpenseDirection.TOOK_UDHAR -> "-${formatMoney(tx.amount)}"
+                                else -> formatMoney(abs(tx.amount))
+                            },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Black,
+                            color = amountColor
+                        )
+                    }
 
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = .72f))
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Delete,
                             contentDescription = "Delete",
-                            tint = CocoaMuted.copy(alpha = 0.6f),
-                            modifier = Modifier.size(15.dp)
+                            tint = Color(0xFF826F7B),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -815,7 +827,7 @@ private fun LedgerItemRow(
                     Button(
                         onClick = onConfirm,
                         shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D42), contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF40D99A), contentColor = com.invatech.pockit.ui.theme.PockitBackground),
                         modifier = Modifier.height(26.dp)
                     ) {
                         Text("Confirm", fontSize = 10.sp, fontWeight = FontWeight.Bold)

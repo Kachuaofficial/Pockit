@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.notification
 
+/*
+ * Notification inbox presentation: filtering, day sections, read/delete actions and undo feedback.
+ * Consumes NotificationViewModel state and events; notification records do not prove a payment was received.
+ */
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -373,6 +378,7 @@ private fun NotificationsList(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+    val entryPositions=remember(listItems) { listItems.withIndex().filter { it.value is NotificationListItem.Entry }.mapIndexed { ordinal,item -> item.index to ordinal }.toMap() }
 
     // Switching tabs should always start from the newest item.
     LaunchedEffect(filter) { listState.scrollToItem(0) }
@@ -414,8 +420,9 @@ private fun NotificationsList(
                                 nowMillis = now.value
                             )
                         }
-
-
+                        val ordinal=entryPositions[index]?:-1
+                        if(com.invatech.pockit.ui.common.ads.NativePlacementPolicy.afterRow(ordinal,entryPositions.size))
+                            com.invatech.pockit.ui.common.ads.PockitNativeAdCard(placementKey="notifications.native.$ordinal")
                     }
                 }
             }

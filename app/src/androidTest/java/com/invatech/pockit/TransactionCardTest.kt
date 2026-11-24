@@ -1,5 +1,9 @@
 package com.invatech.pockit
 
+/*
+ * Compose instrumentation checks for transaction-card rendering and actions.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
@@ -61,7 +65,7 @@ class TransactionCardTest {
                 compose.onNodeWithText("Transaction").assertIsDisplayed()
                 compose.onNodeWithText("− " + Money.format(row.amountPaise)).assertIsDisplayed()
                 compose.onNodeWithContentDescription("Back").performClick()
-                compose.onNodeWithText("Activity").assertIsDisplayed()
+                compose.onNodeWithText("Transactions").assertIsDisplayed()
             }
         } finally {
             com.invatech.pockit.ui.common.motion.MotionSettings.setEnabled(context, previous)

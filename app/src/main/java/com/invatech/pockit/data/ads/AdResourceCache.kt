@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.ads
 
+/*
+ * Bounded screen-owned least-recently-used cache for ad SDK resources.
+ * Evicts only idle resources so a view still displaying an ad is not destroyed by cache pressure.
+ */
+
 internal interface CachedAdResource {
     val inUse: Boolean
     val isClosed: Boolean
@@ -10,6 +15,11 @@ internal interface CachedAdResource {
 internal class AdResourceCache<K, V : CachedAdResource>(private val capacity: Int) {
     private val entries = LinkedHashMap<K, V>(capacity, 0.75f, true)
     init { require(capacity > 0) }
+    /**
+     * Reuses an open cached resource or evicts the least recently used idle entry before
+     * allocating one. If capacity is full and every entry is in use, returns null instead of
+     * destroying an attached ad.
+     */
     fun getOrCreate(key: K, factory: () -> V): V? {
         entries[key]?.let { if (!it.isClosed) return it else entries.remove(key) }
         if (entries.size >= capacity) {

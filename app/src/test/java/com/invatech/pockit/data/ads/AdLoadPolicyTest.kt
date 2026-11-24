@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.ads
 
+/*
+ * Unit tests for ad retry limits and cache expiry, including clock rollback.
+ */
+
 import org.junit.Assert.*
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError.ErrorCode
 import org.junit.Test

@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Shared-expense amount input. Keeps editable text in the caller and reports changes through a callback.
+ */
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,7 +24,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.invatech.pockit.ui.theme.Ink
-import com.invatech.pockit.ui.theme.Mint
 
 @Composable
 fun AmountCard(
@@ -29,7 +32,8 @@ fun AmountCard(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = Mint,
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .30f)),
         shape = RoundedCornerShape(30.dp),
         modifier = modifier.fillMaxWidth()
     ) {
@@ -43,7 +47,7 @@ fun AmountCard(
                 Text(
                     text = "₹",
                     style = MaterialTheme.typography.displayLarge,
-                    color = Ink
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 BasicTextField(
@@ -51,7 +55,7 @@ fun AmountCard(
                     onValueChange = onAmountChange,
                     singleLine = true,
                     textStyle = MaterialTheme.typography.displayLarge.copy(color = Ink),
-                    cursorBrush = SolidColor(Ink),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
                     decorationBox = { inner ->

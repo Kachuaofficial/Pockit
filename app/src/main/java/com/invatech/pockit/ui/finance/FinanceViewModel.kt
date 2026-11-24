@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.finance
 
+/*
+ * Screen state and actions for personal udhar, goals and detected-payment review.
+ * Partitions owner-scoped FinanceRecord rows by kind and serializes actions through a busy flag.
+ */
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -29,6 +34,10 @@ class FinanceViewModel : ViewModel() {
     val goals = records.map { it.filter { row -> row.kind == "GOAL" } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     fun retrySync() { _error.value = null; syncGeneration.value++ }
     fun clearError() { _error.value = null }
+    /**
+     * Allows one finance action at a time, validates the captured owner against the active session
+     * and publishes an error on failure. finally clears busy state, including after cancellation.
+     */
     private fun perform(action: suspend () -> Unit) {
         if (_busy.value) return
         _busy.value = true
@@ -43,12 +52,22 @@ class FinanceViewModel : ViewModel() {
             } finally { _busy.value = false }
         }
     }
+    /**
+     * Writes the reviewed amount/category into the wallet using a stable upi_<record ID> request
+     * key, then marks the review APPROVED. These are two operations, not one cross-record
+     * transaction; the stable wallet key protects a retry from a second balance effect.
+     */
     fun approve(record: FinanceRecord, name: String, amount: Long, direction: String, category: String) = perform {
         require(record.owner == owner && amount in 1..Money.MAX_AMOUNT && name.isNotBlank())
         WalletRepository().addTransaction(name, amount, WalletTransactionType.valueOf(direction), category, "upi_${record.id}", record.occurredAt)
         repo.status(record, "APPROVED")
     }
     fun reject(record: FinanceRecord) = perform { repo.status(record, "REJECTED") }
+    /**
+     * Normalizes the person name and checks that a repayment does not exceed the outstanding
+     * position. Saves a personal-ledger record; this is separate from the connected-friend
+     * repository.
+     */
     fun addUdhar(name: String, amount: Long, direction: String, note: String, onSaved: () -> Unit) = perform {
         require(name.isNotBlank() && amount in 1..Money.MAX_AMOUNT)
         require(direction in listOf("LENT", "BORROWED", "RECEIVED", "REPAID"))
@@ -62,6 +81,10 @@ class FinanceViewModel : ViewModel() {
         onSaved()
     }
     fun deleteEntry(record: FinanceRecord) = perform { require(record.owner == owner); repo.status(record, "DELETED") }
+    /**
+     * Creates a goal whose amountPaise is the target and whose direction initially stores zero
+     * contributed paise.
+     */
     fun addGoal(name: String, target: Long, onSaved: () -> Unit) = perform {
         require(name.isNotBlank() && target in 1..Money.MAX_AMOUNT)
         repo.save(FinanceRecord(UUID.randomUUID().toString(), owner, "GOAL", name.trim(), target, "0", status = "SAVED"))
@@ -74,6 +97,10 @@ class FinanceViewModel : ViewModel() {
     }
 }
 
+/**
+ * Positive means the named person owes the user; negative means the user owes that person. LENT
+ * and REPAID increase the net position, while BORROWED and RECEIVED reduce it.
+ */
 fun udharBalance(rows: List<FinanceRecord>): Long = Money.sum(rows.map {
     if (it.direction == "LENT" || it.direction == "REPAID") it.amountPaise else -it.amountPaise
 })

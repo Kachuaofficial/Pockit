@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.update
 
+/*
+ * Google Play in-app update availability, download state and completion callbacks.
+ * Registers and removes update listeners with activity lifecycle integration.
+ */
+
 import android.app.Activity
 import android.content.Context
 import androidx.activity.result.ActivityResultLauncher

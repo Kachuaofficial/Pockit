@@ -1,5 +1,11 @@
 package com.invatech.pockit.ui.common.loading
 
+/*
+ * Animated geometric loading indicator with a reduced-motion fallback.
+ * The animation visualizes waiting; it does not own or start the underlying request.
+ */
+
+import androidx.compose.runtime.getValue
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -11,43 +17,25 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.invatech.pockit.ui.theme.Ink
-import com.invatech.pockit.ui.theme.LavenderDeep
-import com.invatech.pockit.ui.theme.MintDeep
-import com.invatech.pockit.ui.theme.PeachDeep
+import com.invatech.pockit.ui.theme.PockitOrange
+import com.invatech.pockit.ui.theme.PockitOrangeLight
+import com.invatech.pockit.ui.theme.PockitOrangeDeep
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -58,7 +46,7 @@ import kotlin.math.sin
  * Implements Google's Material 3 Expressive motion physics:
  * - Fluid geometric shape morphing (Circle -> Squircle -> 4-Petal Clover -> Diamond).
  * - Breathing scale and elastic rotation.
- * - Dynamic Pockit brand color cycling (Mint -> Lavender -> Peach -> Ink).
+ * - Warm amber-to-orange brand colour cycling.
  */
 @Composable
 fun ExpressiveLoadingIndicator(
@@ -107,16 +95,16 @@ fun ExpressiveLoadingIndicator(
 
     // Expressive Brand Color Cycling
     val dynamicColor by transition.animateColor(
-        initialValue = MintDeep,
-        targetValue = LavenderDeep,
+        initialValue = PockitOrangeLight,
+        targetValue = PockitOrange,
         animationSpec = infiniteRepeatable(
             animation = keyframes {
                 durationMillis = 3600
-                MintDeep at 0
-                LavenderDeep at 900
-                PeachDeep at 1800
-                Ink at 2700
-                MintDeep at 3600
+                PockitOrangeLight at 0
+                PockitOrange at 900
+                PockitOrangeDeep at 1800
+                PockitOrange at 2700
+                PockitOrangeLight at 3600
             },
             repeatMode = RepeatMode.Restart
         ),
@@ -233,143 +221,4 @@ private fun createMorphingShapePath(
 
     path.close()
     return path
-}
-
-/**
- * Material 3 Expressive Indeterminate Circular Progress Indicator.
- * Features fluid arc velocity with rounded stroke caps and a centered pulsating dot.
- */
-@Composable
-fun ExpressiveCircularIndicator(
-    modifier: Modifier = Modifier,
-    size: Dp = 36.dp,
-    strokeWidth: Dp = 3.5.dp,
-    color: Color = MintDeep
-) {
-    val enabled by com.invatech.pockit.ui.common.motion.MotionSettings.enabled.collectAsState()
-    if (!enabled) { androidx.compose.material3.Text("Loading…", modifier = modifier); return }
-    val transition = rememberInfiniteTransition(label = "circular_indeterminate_transition")
-
-    val startAngle by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1332, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "circular_start_angle"
-    )
-
-    val sweepAngle by transition.animateFloat(
-        initialValue = 28f,
-        targetValue = 270f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "circular_sweep_angle"
-    )
-
-    Canvas(modifier = modifier.size(size)) {
-        val stroke = Stroke(
-            width = strokeWidth.toPx(),
-            cap = StrokeCap.Round
-        )
-
-        val padding = strokeWidth.toPx() / 2f
-        val arcSize = Size(this.size.width - padding * 2, this.size.height - padding * 2)
-
-        rotate(startAngle) {
-            drawArc(
-                color = color,
-                startAngle = 0f,
-                sweepAngle = sweepAngle,
-                useCenter = false,
-                topLeft = Offset(padding, padding),
-                size = arcSize,
-                style = stroke
-            )
-        }
-    }
-}
-
-/**
- * Expressive 3-Pill pulse indicator, ideal for buttons and compact status views.
- */
-@Composable
-fun ExpressivePulsingPills(
-    modifier: Modifier = Modifier,
-    color: Color = MintDeep,
-    pillWidth: Dp = 6.dp,
-    maxHeight: Dp = 22.dp,
-    minHeight: Dp = 8.dp
-) {
-    val enabled by com.invatech.pockit.ui.common.motion.MotionSettings.enabled.collectAsState()
-    if (!enabled) { androidx.compose.material3.Text("Loading…", modifier = modifier); return }
-    val transition = rememberInfiniteTransition(label = "expressive_pills_transition")
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        listOf(0, 160, 320).forEach { delayMs ->
-            val fraction by transition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = keyframes {
-                        durationMillis = 900
-                        0f at 0
-                        1f at 450
-                        0f at 900
-                    },
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "pill_delay_$delayMs"
-            )
-
-            val currentHeight = minHeight + (maxHeight - minHeight) * fraction
-
-            Box(
-                modifier = Modifier
-                    .size(width = pillWidth, height = currentHeight)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-        }
-    }
-}
-
-/**
- * Expressive Fullscreen or Card Loading Overlay.
- */
-@Composable
-fun ExpressiveLoadingOverlay(
-    message: String = "Loading...",
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.background.copy(alpha = 0.85f),
-        modifier = modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            ExpressiveLoadingIndicator(
-                size = 54.dp,
-                showHalo = true
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
 }

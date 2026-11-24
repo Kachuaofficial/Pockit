@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * WorkManager entry point for reminder evaluation when the activity is not open.
+ * Delegates reminder selection to PockitEngagementNotificationManager.
+ */
+
 import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker

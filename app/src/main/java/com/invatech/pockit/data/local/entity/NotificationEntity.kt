@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.local.entity
 
+/*
+ * Local inbox message row with read state and an optional navigation target; it is not a financial receipt.
+ */
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID

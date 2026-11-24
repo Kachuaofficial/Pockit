@@ -1,10 +1,15 @@
 package com.invatech.pockit.ui.finance
 
+/*
+ * Savings-goal list, target entry and contribution forms.
+ * FinanceViewModel saves records; contributions are tracked amounts, not transfers into a bank account.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -26,13 +31,16 @@ fun GoalsScreen(onBack: () -> Unit, vm: FinanceViewModel = viewModel()) {
         item { Button(onClick = { add = true }) { Text("New goal") } }
         item { ErrorNotice(error) }
         if (goals.isEmpty()) item { FinanceCard(color = com.invatech.pockit.ui.theme.PockitLavender) { Text("What are you saving for?", style = MaterialTheme.typography.titleLarge); Text("A laptop, a trip, or your next course. Start with a target.") } }
-        items(goals, key = { it.id }) { goal -> FinanceCard {
+        itemsIndexed(goals, key = { _,it -> it.id }) { index,goal -> Column(verticalArrangement=Arrangement.spacedBy(16.dp)) { FinanceCard {
             val saved = goal.direction.toLongOrNull() ?: 0L
             Text(goal.name, style = MaterialTheme.typography.titleLarge)
             Text("${Money.format(saved)} of ${Money.format(goal.amountPaise)}")
             LinearProgressIndicator(progress = { (saved.toDouble() / goal.amountPaise).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
             if (saved < goal.amountPaise) TextButton(onClick = { vm.clearError(); contribute = goal }) { Text("Add savings") } else Text("Goal reached")
+        }
+            if(com.invatech.pockit.ui.common.ads.NativePlacementPolicy.afterRow(index,goals.size)) com.invatech.pockit.ui.common.ads.PockitNativeAdCard(placementKey="goals.native.$index")
         } }
+        if(goals.size in 1..5)item{com.invatech.pockit.ui.common.ads.PockitNativeAdCard(placementKey="goals.footer.native")}
     }
     if (add || contribute != null) {
         var name by remember { mutableStateOf("") }

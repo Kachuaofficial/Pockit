@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.finance
 
+/*
+ * Pocket-money planning interface based on the supplied recorded balance and planning inputs.
+ * It presents an estimate; it does not obtain a live bank balance.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
@@ -18,6 +23,7 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun PlannerScreen(balancePaise: Long, onBack: () -> Unit) {
     val context = LocalContext.current
+    val online = com.invatech.pockit.ui.common.rememberOnline()
     val uid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
     val prefs = remember(uid) { context.getSharedPreferences("planner_$uid", 0) }
     var allowance by remember { mutableStateOf(prefs.getString("allowance", "").orEmpty()) }
@@ -28,7 +34,8 @@ fun PlannerScreen(balancePaise: Long, onBack: () -> Unit) {
     var loading by remember { mutableStateOf(uid.isNotBlank()) }
     var saving by remember { mutableStateOf(false) }
     val ref = remember(uid) { if (uid.isBlank()) null else com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(uid).collection("settings").document("planner") }
-    LaunchedEffect(uid) {
+    LaunchedEffect(uid, online) {
+        if (!online) { loading = false; return@LaunchedEffect }
         try {
             val snapshot = ref?.get()?.await()
             if (snapshot?.exists() == true) {
@@ -63,7 +70,7 @@ fun PlannerScreen(balancePaise: Long, onBack: () -> Unit) {
             OutlinedTextField(day, { day = it; message = null }, label = { Text("Allowance day each month (1–31)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
             AmountField(reserved, { reserved = it; message = null }, "Reserve for bills / savings (₹)")
             Text("Expected allowance is a plan only. Add it as income when it actually arrives.", style = MaterialTheme.typography.bodySmall)
-            Button(enabled = !loading && !saving && ref != null && Money.parse(allowance) != null && nextDay in 1..31 && reserve != null, onClick = {
+            Button(enabled = online && !loading && !saving && ref != null && Money.parse(allowance) != null && nextDay in 1..31 && reserve != null, onClick = {
                 saving = true
                 scope.launch {
                     try {
@@ -73,7 +80,8 @@ fun PlannerScreen(balancePaise: Long, onBack: () -> Unit) {
                     } catch (e: Exception) { message = "Plan not saved: ${e.message}" }
                     finally { saving = false }
                 }
-            }) { Text(if (saving) "Saving…" else if (loading) "Syncing…" else "Save plan") }
+            }) { Text(if (!online) "Connect to save plan" else if (saving) "Saving…" else if (loading) "Syncing…" else "Save plan") }
+            if (!online) Text("The calculator works offline. Connect to save your plan to your account.", style = MaterialTheme.typography.bodySmall)
             message?.let { Text(it) }
         } }
     }

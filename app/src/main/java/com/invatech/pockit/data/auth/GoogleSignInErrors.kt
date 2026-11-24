@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.auth
 
+/*
+ * Maps credential/sign-in exceptions into actionable UI messages.
+ * Keeps platform error interpretation outside the sign-in layout.
+ */
+
 import androidx.credentials.exceptions.*
 
 /** Never mistake a missing provider or OAuth configuration issue for lost connectivity. */

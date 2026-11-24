@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.ads
 
+/*
+ * Activity-bound UMP consent flow followed by the SDK initialization callback.
+ * Obtaining consent and deciding whether requests may start happen before screen ad loading.
+ */
+
 import android.app.Activity
 import android.os.SystemClock
 import android.util.Log

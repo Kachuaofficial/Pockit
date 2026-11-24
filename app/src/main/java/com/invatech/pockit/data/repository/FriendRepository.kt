@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.repository
 
+/*
+ * Firestore friendship and direct friend-transaction access with local caching.
+ * Maps direction and settlement signs into the current user perspective; server rules govern participant access.
+ */
+
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -100,7 +105,9 @@ class FriendRepository(
     }
 
     /**
-     * Realtime flow of all transactions across friendships with a limit to avoid unbounded Firestore reads.
+     * Maps a shared friend event into the current user perspective, reversing directions/signs
+     * where needed and preserving status. The same event can therefore have different display
+     * direction for its two participants.
      */
     fun observeTransactions(limit: Long = 100): Flow<List<FriendTransaction>> = callbackFlow {
         val uid = currentUserId
@@ -197,7 +204,9 @@ class FriendRepository(
     }
 
     /**
-     * Instantly connect with a friend by decoding their scanned QR/barcode.
+     * Decodes the Pockit connection payload, rejects self-connection and writes a stable
+     * friendship identifier. The catch path currently returns an optimistic Friend even after a
+     * cloud failure; that result alone does not prove remote persistence.
      */
     suspend fun connectFriendViaBarcode(rawBarcode: String): Result<Friend> {
         val payload = FriendConnectionPayload.fromQrString(rawBarcode)
@@ -301,7 +310,9 @@ class FriendRepository(
     }
 
     /**
-     * Update status of an expense or settlement (e.g. CONFIRMED or REJECTED by counterparty).
+     * Writes the selected status to a friend event. Participant authorization comes from the
+     * deployed server rules; the repository method itself does not independently prove which
+     * participant may confirm.
      */
     suspend fun updateTransactionStatus(txId: String, newStatus: TransactionStatus): Result<Unit> {
         return try {

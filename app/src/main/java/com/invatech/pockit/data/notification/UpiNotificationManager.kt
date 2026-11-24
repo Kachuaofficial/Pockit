@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * Optional detected-payment inbox and deduplication coordinator.
+ * Stores a pending FinanceRecord; user approval in FinanceViewModel is the path that writes the wallet.
+ */
+
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -67,6 +72,11 @@ object UpiNotificationManager {
         }
     }
 
+    /**
+     * Creates a pending owner-scoped review item only after opt-in. A reference or notification
+     * identity is hashed into a stable ID so duplicate delivery cannot reopen an approved/rejected
+     * item. The parser result is not automatically posted to the wallet.
+     */
     fun processAndLogTransaction(context: Context, tx: ParsedUpiTransaction, eventKey: String = "", postedAt: Long = System.currentTimeMillis()) {
         if (!isAutoTrackingEnabled(context)) return
         val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -92,9 +102,10 @@ object UpiNotificationManager {
                 // Create only: repeated notifications must never reopen approved/rejected reviews.
                 cloud.runTransaction { transaction -> if (!transaction.get(ref).exists()) transaction.set(ref, record) }
             }
-            if (result != -1L) NotificationHelper.showNotification(
+            if (result != -1L) NotificationHelper.showAndStoreNotification(
                 context = context, title = "Payment ready to review",
                 body = "Check the amount and category before adding it to your wallet.",
+                type = "expense",
                 extraData = mapOf("navigate_to" to "upi_review"),
                 stableId = 4201
             )

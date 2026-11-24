@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.repository
 
+/*
+ * Owner-scoped category limits, cloud/local synchronization and monthly spending progress.
+ * Calculates spending from wallet records and can request warning notifications after an expense.
+ */
+
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -57,6 +62,10 @@ class BudgetRepository(
             .document(uid)
             .collection("budgets")
 
+    /**
+     * Collects Room budget rows while listening for remote updates. Refresh errors are exposed
+     * through syncError; awaitClose cancels local collection and removes the cloud listener.
+     */
     fun observeBudgets(): Flow<List<CategoryBudgetEntity>> = channelFlow {
         val uid = userId()
         if (uid == null) { send(emptyList()); close(); return@channelFlow }
@@ -78,6 +87,7 @@ class BudgetRepository(
         limitPaise: Long,
         warningThresholdPercent: Int = 80
     ) {
+        com.invatech.pockit.data.network.NetworkMonitor.requireOnline()
         require(limitPaise in 1..Money.MAX_AMOUNT) { "Enter a valid budget." }
         require(warningThresholdPercent in 1..100)
         val entity = CategoryBudgetEntity(
@@ -103,6 +113,7 @@ class BudgetRepository(
     }
 
     suspend fun deleteBudget(category: String) {
+        com.invatech.pockit.data.network.NetworkMonitor.requireOnline()
         val uid = userId() ?: error("Please sign in again.")
         budgetsCollection(uid).document(category).delete().await()
         localDao?.deleteBudget(category)
@@ -151,7 +162,9 @@ class BudgetRepository(
     }
 
     /**
-     * Observes real-time budget progress cards combining limits and Room transactions.
+     * Combines category limits with cached wallet history for the current calendar month. Only
+     * expense records contribute; Overall includes all categories. Remaining money and integer
+     * percentage are derived values, not additional ledger entries.
      */
     fun observeBudgetProgress(): Flow<List<CategoryBudgetProgress>> {
         val wDao = walletDao ?: return emptyFlow()
@@ -202,7 +215,14 @@ class BudgetRepository(
             val threshold = if (percent >= 100) 100 else if (percent >= budget.warningThresholdPercent) budget.warningThresholdPercent else continue
             val alertKey = "${getStartOfCurrentMonthMillis()}_${budget.category}_$threshold"
             if (prefs.getBoolean(alertKey, false)) continue
-            NotificationHelper.showNotification(context, "Budget update: ${budget.category}", "You've used $percent% of your monthly limit.", mapOf("navigate_to" to "budgets"))
+            NotificationHelper.showAndStoreNotification(
+                context = context,
+                title = "Budget update: ${budget.category}",
+                body = "You've used $percent% of your monthly limit.",
+                type = "budget",
+                extraData = mapOf("navigate_to" to "budgets"),
+                stableId = alertKey.hashCode()
+            )
             prefs.edit().putBoolean(alertKey, true).apply()
         }
     }

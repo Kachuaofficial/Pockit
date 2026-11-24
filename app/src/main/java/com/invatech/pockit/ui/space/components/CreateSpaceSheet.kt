@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Collects space name, visual choices and bill-split/household type, then delegates creation to its callback.
+ */
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -253,7 +257,7 @@ fun CreateSpaceSheet(
                             .background(color)
                             .border(
                                 width = borderWidth,
-                                color = Ink,
+                                color = MaterialTheme.colorScheme.primary,
                                 shape = CircleShape
                             )
                             .clickable(

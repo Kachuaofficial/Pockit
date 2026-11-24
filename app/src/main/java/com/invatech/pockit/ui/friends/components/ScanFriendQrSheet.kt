@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.friends.components
 
+/*
+ * Offers code scanning and manual connection input, delegating decoded content to the friend workflow.
+ */
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -116,7 +120,7 @@ fun ScanFriendQrSheet(
                         )
                     },
                 shape = RoundedCornerShape(22.dp),
-                color = Ink
+                color = com.invatech.pockit.ui.theme.PockitSurface
             ) {
                 Row(
                     modifier = Modifier.padding(20.dp),
@@ -155,7 +159,7 @@ fun ScanFriendQrSheet(
                     Icon(
                         imageVector = Icons.Rounded.CenterFocusStrong,
                         contentDescription = null,
-                        tint = Mint,
+                        tint = com.invatech.pockit.ui.theme.PockitOrange,
                         modifier = Modifier.size(20.dp)
                     )
                 }

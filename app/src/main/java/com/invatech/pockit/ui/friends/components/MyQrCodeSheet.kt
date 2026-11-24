@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.friends.components
 
+/*
+ * Shows the current connection payload as a generated QR and supports sharing the identifier.
+ */
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -262,7 +266,7 @@ fun MyQrCodeSheet(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Ink)
+                        .background(com.invatech.pockit.ui.theme.PockitOrange)
                         .clickable(onClick = onDismiss)
                         .padding(vertical = 14.dp),
                     contentAlignment = Alignment.Center
@@ -271,7 +275,7 @@ fun MyQrCodeSheet(
                         text = "Done",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = com.invatech.pockit.ui.theme.PockitBackground
                     )
                 }
             }

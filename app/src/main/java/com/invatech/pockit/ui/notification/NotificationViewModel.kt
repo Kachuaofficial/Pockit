@@ -1,5 +1,10 @@
 package com.invatech.pockit.ui.notification
 
+/*
+ * Maps notification records into filtered, dated sections and one-time UI events.
+ * Owns retries, read state and undo bookkeeping while NotificationRepository performs persistence.
+ */
+
 import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel

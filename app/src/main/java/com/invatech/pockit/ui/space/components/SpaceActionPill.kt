@@ -1,5 +1,9 @@
 package com.invatech.pockit.ui.space.components
 
+/*
+ * Compact reusable space action with press feedback and a caller-owned click handler.
+ */
+
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -54,7 +58,7 @@ fun SpaceActionPill(
             .scale(scale)
             .heightIn(min = 56.dp)
             .clip(CircleShape)
-            .background(container)
+            .background(androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.surface, container, .08f))
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

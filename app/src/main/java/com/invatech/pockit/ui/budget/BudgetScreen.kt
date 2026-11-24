@@ -1,10 +1,15 @@
 package com.invatech.pockit.ui.budget
 
+/*
+ * Category-budget editor and spending-progress view.
+ * Uses BudgetRepository and wallet history; budget limits are stored in paise, not display rupees.
+ */
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -52,7 +57,8 @@ fun BudgetScreen(onBack: () -> Unit) {
             Button(onClick = { editing = "Overall" }) { Text(if (budgets.isEmpty()) "Set your first budget" else "Set a budget") }
         } }
         item { ErrorNotice(error); ErrorNotice(syncError) }
-        items(budgets, key = { it.category }) { budget ->
+        itemsIndexed(budgets, key = { _,it -> it.category }) { index,budget ->
+            Column(verticalArrangement=Arrangement.spacedBy(16.dp)) {
             val used = Money.sum(spent.filter { budget.category == "Overall" || it.category.equals(budget.category, true) }.map { it.amountPaise })
             val remaining = budget.monthlyLimitPaise - used
             FinanceCard {
@@ -62,8 +68,10 @@ fun BudgetScreen(onBack: () -> Unit) {
                 Text(if (remaining >= 0) "${Money.format(remaining)} remaining" else "${Money.format(-remaining)} over budget", color = if (remaining < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                 TextButton(onClick = { editing = budget.category }) { Text("Edit limit") }
             }
+                if(com.invatech.pockit.ui.common.ads.NativePlacementPolicy.afterRow(index,budgets.size)) com.invatech.pockit.ui.common.ads.PockitNativeAdCard(placementKey="budgets.native.$index")
+            }
         }
-        if (budgets.isNotEmpty()) {
+        if (budgets.size in 1..5) {
             item { PockitNativeAdCard(placementKey = "BudgetScreen.native.1", modifier = Modifier.padding(vertical = 4.dp)) }
         }
     }

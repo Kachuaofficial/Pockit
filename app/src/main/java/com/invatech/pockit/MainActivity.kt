@@ -1,7 +1,10 @@
 package com.invatech.pockit
 
-import androidx.compose.ui.platform.createLifecycleAwareWindowRecomposer
-import com.invatech.pockit.ui.common.motion.MotionSettings
+/*
+ * Android entry activity. Hosts Compose and chooses onboarding, sign-in, optional app lock, or the main navigation.
+ * Handles widget/notification intents, notification permission, ad consent and Play update callbacks.
+ */
+
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -19,15 +22,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.createLifecycleAwareWindowRecomposer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -52,6 +50,7 @@ import com.invatech.pockit.data.notification.NotificationHelper
 import com.invatech.pockit.data.update.InAppUpdateManager
 import com.invatech.pockit.ui.auth.AuthViewModel
 import com.invatech.pockit.ui.auth.LoginScreen
+import com.invatech.pockit.ui.common.motion.MotionSettings
 import com.invatech.pockit.ui.common.security.AppLockScreen
 import com.invatech.pockit.ui.navigation.PockitApp
 import com.invatech.pockit.ui.splash.AnimatedSplashScreen
@@ -72,13 +71,21 @@ class MainActivity : FragmentActivity() {
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
         if (result.resultCode != RESULT_OK) {
-            // User cancelled or update failed
+            // Will handle later
         }
     }
 
+    /**
+     * Refreshes motion/consent/update state when the foreground activity resumes and records app
+     * use for reminders.
+     */
     override fun onResume() {
         super.onResume()
-        if (::consentManager.isInitialized) consentManager.requestConsentAndInit { AdManager.initialize(this) }
+        if (::consentManager.isInitialized) consentManager.requestConsentAndInit {
+            AdManager.initialize(
+                this
+            )
+        }
         MotionSettings.refresh(this)
         com.invatech.pockit.data.notification.PockitEngagementNotificationManager.recordAppUse(this)
         if (::inAppUpdateManager.isInitialized) {
@@ -93,13 +100,20 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    /**
+     * Receives notification/widget actions while this activity is already running. Mutable pending
+     * flags let Compose consume the new route or quick-add request.
+     */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         intent.getStringExtra("navigate_to")?.let { route ->
             pendingRoute = route
         }
-        if (intent.getStringExtra("action") == "quick_add" || intent.getBooleanExtra("open_add_transaction", false)) {
+        if (intent.getStringExtra("action") == "quick_add" || intent.getBooleanExtra(
+                "open_add_transaction", false
+            )
+        ) {
             pendingOpenAddExpense = true
         }
     }
@@ -112,11 +126,15 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    /**
+     * Requests notification display permission on Android 13+ when needed, then synchronizes the
+     * current messaging token. Display permission and notification-listener access are different
+     * permissions.
+     */
     private fun checkNotificationPermissionAndSyncToken() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    this, Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 lifecycleScope.launch {
@@ -132,13 +150,20 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    /**
+     * Creates Android services and Compose content, then selects onboarding, sign-in, app lock or
+     * the main graph. Notification/widget intents are held until navigation can consume them.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         pendingRoute = intent.getStringExtra("navigate_to")
-        if (intent.getStringExtra("action") == "quick_add" || intent.getBooleanExtra("open_add_transaction", false)) {
+        if (intent.getStringExtra("action") == "quick_add" || intent.getBooleanExtra(
+                "open_add_transaction", false
+            )
+        ) {
             pendingOpenAddExpense = true
         }
         NotificationHelper.createNotificationChannel(this)
@@ -154,9 +179,19 @@ class MainActivity : FragmentActivity() {
             AdManager.initialize(this)
         }
 
-        setContent(parent = window.decorView.createLifecycleAwareWindowRecomposer(MotionSettings.durationScale, lifecycle)) {
+        setContent(
+            parent = window.decorView.createLifecycleAwareWindowRecomposer(
+                MotionSettings.durationScale, lifecycle
+            )
+        ) {
             val onboardingPrefs = remember { getSharedPreferences("pockit_onboarding", 0) }
-            var onboarded by remember { mutableStateOf(onboardingPrefs.getBoolean("liquid_v2", false)) }
+            var onboarded by remember {
+                mutableStateOf(
+                    onboardingPrefs.getBoolean(
+                        "liquid_v2", false
+                    )
+                )
+            }
             val authViewModel: AuthViewModel = viewModel()
             val uiState by authViewModel.uiState.collectAsState()
 
@@ -180,25 +215,20 @@ class MainActivity : FragmentActivity() {
 
             PockitTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
                         Crossfade(
-                            targetState = showSplash,
-                            animationSpec = tween(
+                            targetState = showSplash, animationSpec = tween(
                                 durationMillis = com.invatech.pockit.ui.common.motion.M3Duration.Medium3,
                                 easing = com.invatech.pockit.ui.common.motion.M3Easing.Emphasized
-                            ),
-                            label = "splash_crossfade"
+                            ), label = "splash_crossfade"
                         ) { isSplashVisible ->
                             if (isSplashVisible) {
                                 AnimatedSplashScreen(
-                                    isCheckingAuth = uiState.isCheckingAuth,
-                                    onSplashFinished = {
+                                    isCheckingAuth = uiState.isCheckingAuth, onSplashFinished = {
                                         showSplash = false
-                                    }
-                                )
+                                    })
                             } else {
                                 Crossfade(
                                     targetState = uiState.isSignedIn to isAppLocked,
@@ -211,42 +241,43 @@ class MainActivity : FragmentActivity() {
                                     when {
                                         !onboarded -> {
                                             com.invatech.pockit.ui.finance.OnboardingScreen {
-                                                onboardingPrefs.edit().putBoolean("liquid_v2", true).apply()
+                                                onboardingPrefs.edit().putBoolean("liquid_v2", true)
+                                                    .apply()
                                                 onboarded = true
                                             }
                                         }
+
                                         !isSignedIn -> {
                                             LoginScreen(
-                                                viewModel = authViewModel,
-                                                onLoginSuccess = {
-                                                    isAppLocked = biometricAuthManager.isBiometricEnabled && biometricAuthManager.canAuthenticate()
+                                                viewModel = authViewModel, onLoginSuccess = {
+                                                    isAppLocked =
+                                                        biometricAuthManager.isBiometricEnabled && biometricAuthManager.canAuthenticate()
                                                     checkNotificationPermissionAndSyncToken()
-                                                }
-                                            )
+                                                })
                                         }
+
                                         isLocked -> {
                                             AppLockScreen(
                                                 onUnlockRequest = {
                                                     biometricAuthManager.promptBiometric(
-                                                        activity = this@MainActivity,
-                                                        onSuccess = {
+                                                        activity = this@MainActivity, onSuccess = {
                                                             isAppLocked = false
-                                                        }
-                                                    )
-                                                }
-                                            )
+                                                        })
+                                                })
                                         }
+
                                         else -> {
                                             PockitApp(
                                                 initialRoute = pendingRoute,
                                                 openAddExpense = pendingOpenAddExpense,
                                                 onRouteHandled = { pendingRoute = null },
-                                                onAddExpenseHandled = { pendingOpenAddExpense = false },
+                                                onAddExpenseHandled = {
+                                                    pendingOpenAddExpense = false
+                                                },
                                                 onSignOut = {
                                                     isAppLocked = true
                                                     authViewModel.signOut()
-                                                }
-                                            )
+                                                })
                                         }
                                     }
                                 }
@@ -256,7 +287,7 @@ class MainActivity : FragmentActivity() {
                         // Play Store In-App Update Ready Banner
                         if (isUpdateDownloaded && !showSplash) {
                             Surface(
-                                color = CocoaEspresso,
+                                color = com.invatech.pockit.ui.theme.PockitElevated,
                                 shape = RoundedCornerShape(20.dp),
                                 modifier = Modifier
                                     .align(Alignment.BottomCenter)
@@ -264,7 +295,9 @@ class MainActivity : FragmentActivity() {
                                     .fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    modifier = Modifier.padding(
+                                        horizontal = 16.dp, vertical = 10.dp
+                                    ),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -275,12 +308,11 @@ class MainActivity : FragmentActivity() {
                                         modifier = Modifier.weight(1f)
                                     )
                                     TextButton(
-                                        onClick = { inAppUpdateManager.completeUpdate() }
-                                    ) {
+                                        onClick = { inAppUpdateManager.completeUpdate() }) {
                                         Text(
                                             text = "RESTART",
                                             fontWeight = FontWeight.Bold,
-                                            color = PastelPeach
+                                            color = com.invatech.pockit.ui.theme.PockitOrange
                                         )
                                     }
                                 }

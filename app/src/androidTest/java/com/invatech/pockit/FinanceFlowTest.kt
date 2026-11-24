@@ -1,5 +1,9 @@
 package com.invatech.pockit
 
+/*
+ * Device/UI regression checks for finance form behaviour and monetary input handling.
+ */
+
 import androidx.compose.ui.test.*
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -59,6 +63,8 @@ class FinanceFlowTest {
                         when (route.value) {
                             "home" -> com.invatech.pockit.ui.home.HomeScreen(userName = "Shiva")
                             "space" -> com.invatech.pockit.ui.space.SpaceScreen()
+                            "all_transactions" -> com.invatech.pockit.ui.home.AllTransactionsScreen(androidx.lifecycle.viewmodel.compose.viewModel(), {})
+                            "insights" -> com.invatech.pockit.ui.home.InsightsScreen(onBack = {}, onBudgets = {}, onTransactions = {})
                             "friends" -> com.invatech.pockit.ui.friends.FriendsScreen()
                             "profile" -> com.invatech.pockit.ui.profile.ProfileScreen()
                         }
@@ -66,7 +72,7 @@ class FinanceFlowTest {
                 }
             }
         }
-        listOf("Home", "Spaces", "Friends", "Profile").forEach { label ->
+        listOf("Home", "Transactions", "Friends", "Insights", "Space").forEach { label ->
             compose.onNode(hasText(label) and hasClickAction()).assertIsDisplayed().performClick().assertIsSelected()
             screenshot("reference-${label.lowercase()}")
         }

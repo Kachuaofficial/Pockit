@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Android view hierarchy bound by the native-ad Compose wrapper and SDK asset registration. -->
 <com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/native_ad_view"
@@ -9,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#F5EFEA"
+        android:background="#FFFFFF"
         android:padding="14dp">
 
         <!-- Top row: Ad badge + Headline -->
@@ -26,8 +27,8 @@
                 android:text="Ad"
                 android:textSize="10sp"
                 android:textStyle="bold"
-                android:textColor="#2E2320"
-                android:background="#EDE6FB"
+                android:textColor="#493A48"
+                android:background="#FFFFE3EC"
                 android:paddingStart="6dp"
                 android:paddingEnd="6dp"
                 android:paddingTop="2dp"
@@ -41,7 +42,7 @@
                 android:layout_marginStart="8dp"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                android:textColor="#2E2320"
+                android:textColor="#493A48"
                 android:singleLine="true"
                 android:ellipsize="end"
                 tools:text="Sponsored App or Service" />
@@ -53,7 +54,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textSize="12sp"
-            android:textColor="#4A3E39"
+            android:textColor="#756574"
             android:visibility="gone" />
 
         <!-- Middle row: Icon + Body -->
@@ -80,7 +81,7 @@
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
                 android:textSize="12sp"
-                android:textColor="#7A6F68"
+                android:textColor="#756574"
                 android:maxLines="2"
                 android:ellipsize="end"
                 tools:text="Discover helpful services, rewards, and tools tailored for you." />
@@ -101,8 +102,8 @@
             android:layout_marginTop="10dp"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#4A3E39"
+            android:textColor="#FFFFFFFF"
+            android:backgroundTint="#E95F76"
             tools:text="Install" />
 
     </LinearLayout>

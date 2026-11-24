@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.ads
 
+/*
+ * Unit tests for cache capacity, idle eviction, visible-resource retention and cleanup.
+ */
+
 import org.junit.Assert.*
 import org.junit.Test
 

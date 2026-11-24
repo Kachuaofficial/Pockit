@@ -1,5 +1,9 @@
 package com.invatech.pockit.data.auth
 
+/*
+ * Unit tests for translating credential exceptions into user-facing sign-in messages.
+ */
+
 import androidx.credentials.exceptions.NoCredentialException
 import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
 import org.junit.Assert.*

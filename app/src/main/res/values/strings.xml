@@ -1,3 +1,4 @@
+<!-- String resources referenced from Kotlin, XML and generated configuration. Resource names are identifiers, so keep references in sync. -->
 <resources>
     <string name="app_name">Pockit</string>
     <string name="upi_notification_service_label">Pockit UPI Auto-Expense</string>

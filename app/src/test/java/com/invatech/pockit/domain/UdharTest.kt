@@ -1,4 +1,8 @@
 package com.invatech.pockit.domain
+
+/*
+ * Unit tests for personal-ledger direction signs and repayment-related balance calculations.
+ */
 import com.invatech.pockit.data.local.database.FinanceRecord
 import com.invatech.pockit.ui.finance.udharBalance
 import com.invatech.pockit.ui.space.util.BalanceCalculator

@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.notification
 
+/*
+ * Android service for new messaging tokens and incoming FCM messages.
+ * Connects background notification delivery to the token manager, local inbox and notification helper.
+ */
+
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -21,6 +26,11 @@ class PockitFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
+    /**
+     * Builds display content and navigation extras from an incoming FCM message, posts an Android
+     * alert and stores a notification row for the current account. Message receipt is an
+     * informational event and does not confirm a settlement.
+     */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         Log.d(TAG, "Message received from: ${remoteMessage.from}")

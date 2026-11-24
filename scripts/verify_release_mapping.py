@@ -1,3 +1,5 @@
+# Checks release mapping expectations so shrinking/obfuscation regressions can be caught during release validation.
+
 """Check release R8 mappings for Firestore's reflection-based property contract."""
 from pathlib import Path
 import re

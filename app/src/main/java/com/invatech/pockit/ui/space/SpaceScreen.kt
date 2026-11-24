@@ -1,10 +1,10 @@
 package com.invatech.pockit.ui.space
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+/*
+ * Shared-space list and the create/join entry points.
+ * Observes SpaceViewModel and reports navigation rather than performing balance calculations in the card layout.
+ */
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,8 +38,6 @@ import androidx.compose.ui.unit.dp
 import com.invatech.pockit.ui.common.ads.PockitBannerAd
 import com.invatech.pockit.ui.common.ads.PockitNativeAdCard
 import com.invatech.pockit.ui.common.loading.ShimmerBox
-import com.invatech.pockit.ui.common.mascot.MascotPose
-import com.invatech.pockit.ui.common.mascot.PockitMascot
 import com.invatech.pockit.ui.home.components.RecordDoodleBackdrop
 import com.invatech.pockit.ui.space.components.CreateSpaceSheet
 import com.invatech.pockit.ui.space.components.JoinSpaceSheet
@@ -189,8 +186,8 @@ fun SpaceScreen(
                             onClick = { onOpenSpace(space.id) },
                             modifier = Modifier.animateItem()
                         )
-                        if (index == 7 && index < spaces.lastIndex) {
-                            PockitNativeAdCard(placementKey = "SpaceScreen.native.1", modifier = Modifier.padding(vertical = 4.dp))
+                        if (com.invatech.pockit.ui.common.ads.NativePlacementPolicy.afterRow(index, spaces.size)) {
+                            PockitNativeAdCard(placementKey = "SpaceScreen.native.$index", modifier = Modifier.padding(vertical = 4.dp))
                         }
                     }
                 }

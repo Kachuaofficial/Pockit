@@ -1,4 +1,8 @@
 package com.invatech.pockit
+
+/*
+ * Device instrumentation checks for supported Room migration paths and schema compatibility.
+ */
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.invatech.pockit.data.local.database.*
@@ -23,10 +27,11 @@ class DatabaseMigrationTest {
         sqlite.execSQL("INSERT INTO wallet_transactions (id,title,amountPaise,type,category,createdAtMillis) VALUES ('kept','Lunch',29,'EXPENSE','Food',123456)")
         sqlite.version = 2
         sqlite.close()
-        val db = Room.databaseBuilder(context, PockitDatabase::class.java, name).addMigrations(PockitMigrations.FROM_2_TO_3).build()
+        val db = Room.databaseBuilder(context, PockitDatabase::class.java, name).addMigrations(PockitMigrations.FROM_2_TO_3, PockitMigrations.FROM_3_TO_4).build()
         try {
             assertEquals(29L, db.walletDao().getTransactionById("kept")?.amountPaise)
             assertTrue(db.budgetDao().getAllBudgets().isEmpty())
+            assertTrue(db.pendingWalletDao().all().isEmpty())
             db.openHelper.writableDatabase.query("SELECT COUNT(*) FROM subscriptions").use { cursor -> assertTrue(cursor.moveToFirst()); assertEquals(0, cursor.getInt(0)) }
         } finally { db.close(); context.deleteDatabase(name) }
     }

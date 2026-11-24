@@ -1,5 +1,9 @@
 package com.invatech.pockit;
 
+/*
+ * Custom Android instrumentation entry point for release smoke validation, selected by the releaseSmoke Gradle property.
+ */
+
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.Bundle;

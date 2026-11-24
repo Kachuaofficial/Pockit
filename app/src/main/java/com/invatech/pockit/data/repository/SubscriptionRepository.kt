@@ -1,5 +1,10 @@
 package com.invatech.pockit.data.repository
 
+/*
+ * Owner-scoped recurring-expense definitions with Room/cloud snapshots and due-date helpers.
+ * These are tracked subscriptions and reminders, not a mandate to debit a payment account.
+ */
+
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -56,6 +61,7 @@ class SubscriptionRepository(
     }
 
     suspend fun addOrUpdateSubscription(subscription: SubscriptionEntity) {
+        com.invatech.pockit.data.network.NetworkMonitor.requireOnline()
         // 1. Instant local Room persistence
 
 
@@ -82,6 +88,7 @@ class SubscriptionRepository(
     }
 
     suspend fun deleteSubscription(id: String) {
+        com.invatech.pockit.data.network.NetworkMonitor.requireOnline()
         val uid = userId() ?: error("Please sign in again.")
         subscriptionsCollection(uid).document(id).delete().await()
         localDao?.deleteSubscription(id)
